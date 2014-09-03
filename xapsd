@@ -1,0 +1,156 @@
+#!/usr/bin/python
+
+
+import collections
+import hashlib
+import sys
+import OpenSSL.crypto as crypto
+
+from twisted.python import log
+from twisted.python.filepath import FilePath
+from twisted.internet.protocol import ServerFactory
+from twisted.protocols.basic import LineOnlyReceiver
+from twisted.internet import reactor
+from twisted.enterprise.adbapi import ConnectionPool
+
+
+Command = collections.namedtuple('Command', ['name', 'args'])
+
+
+def unescape_value(v):
+    if v.startswith('"') and v.endswith('"'):
+        return v[1:-1].decode("string_escape")
+
+def parse_list(value):
+    return [unescape_value(v) for v in value[1:-1].split(",")]
+
+def parse_command(line):
+    args = {}
+    things = line.split(' ')
+    for pair in things[1:]:
+        name, value = pair.split('=', 1)
+        if value.startswith("(") and value.endswith(")"):
+            args[name] = parse_list(value)
+        else:
+            args[name] = unescape_value(value)
+    return Command(things[0], args)
+
+
+#c = parse_command('REGISTER aps-account-id="0715A26B-CA09-4730-A419-793000CA982E" aps-device-token="29183902189018310983092892829" aps-subtopic="com.apple.mobilemail" dovecot-account="stefan" dovecot-mailboxes=("INBOX","Notes")')
+#print c.name
+#print c.arguments
+#sys.exit(0)
+
+
+class EmailPushNotificationProtocol(LineOnlyReceiver):
+
+    def __init__(self, databasePool, topicName):
+        self.databasePool = databasePool
+        self.topicName = topicName
+
+    #
+    # Handle the REGISTER command. It looks as follows:
+    #
+    #  REGISTER aps-account-id="AAA" aps-device-token="BBB"
+    #     aps-subtopic="com.apple.mobilemail"
+    #     dovecot-username="stefan"
+    #     dovecot-mailboxes=("Inbox","Notes")
+    #
+    # We simply store the whole thing in the database?
+    #
+    # The command returns the aps-topic, which is the common name of
+    # the certificate issued by OS X Server for email push
+    # notifications.
+    #
+
+    def handleRegister(self, cmd):
+        log.msg("handleRegister: " + str(cmd))
+
+        def _handleInsert(data):
+            log.msg("Inserted new registration for %s/%s" % (cmd.args['dovecot-username'], cmd.args['aps-account-id']))
+            self.sendLine("OK %s" % self.topicName)
+
+        id = hashlib.sha1(cmd.args['dovecot-username'] + cmd.args['aps-account-id']
+                          + cmd.args['aps-device-token']).hexdigest()
+        q = "insert or ignore into registrations (id,dovecot_username,aps_account_id,aps_device_token) values (?,?,?,?)"
+        a = (id, cmd.args['dovecot-username'], cmd.args['aps-account-id'], cmd.args['aps-device-token'])
+        d = self.databasePool.runQuery(q, a)
+        d.addCallback(_handleInsert)
+        return d
+
+    #
+    # Handle the NOTIFY command. It looks as follows:
+    #
+    #  NOTIFY dovecot-username="stefan" dovecot-mailbox="Inbox"
+    #
+    # See if the the username has devices registered. If it has, loop
+    # over them to find the ones that are interested in the named
+    # mailbox and send those a push notificiation.
+    #
+    # The push notification looks like this:
+    #
+    #  { "aps": { "account-id": aps-account-id } }
+    #
+
+    def handleNotify(self, command):
+        log.msg("handleNotify: " + str(command))
+        return ("OK", "")
+
+    def lineReceived(self, line):
+        log.msg("LINE: " + line)
+        command = parse_command(line)
+        if not command:
+            self.sendLine("ERROR Cannot parse command")
+        else:
+            if command.name == 'NOTIFY':
+                return self.handleNotify(command)
+            elif command.name == 'REGISTER':
+                return self.handleRegister(command)
+            else:
+                self.sendLine("ERROR Unknown command ('%s')" % command.name)
+
+
+class EmailPushNotificationFactory(ServerFactory):
+
+    def __init__(self, databasePool, topicName):
+        self.databasePool = databasePool
+        self.topicName = topicName
+
+    def buildProtocol(self, addr):
+        return EmailPushNotificationProtocol(self.databasePool, self.topicName)
+
+
+def parseTopicFromCertificate(certificatePath):
+    with open(certificatePath) as fp:
+        certificateData = fp.read()
+        certificate = crypto.load_certificate(crypto.FILETYPE_PEM, certificateData)
+        subjectComponents = dict(certificate.get_subject().get_components())
+        return subjectComponents.get('UID')
+
+
+def main(socket_path, database_path, certificate_path, key_path):
+
+    log.startLogging(sys.stdout)
+
+    # Database pool
+    databasePool = ConnectionPool("sqlite3", database_path, check_same_thread=False)
+
+    # TODO: create table if not exists registrations ( id primary key, dovecot_username,aps_account_id,aps_device_token  );
+
+    # Parse the certificate to obtain the topic name
+    topic = parseTopicFromCertificate(certificate_path)
+    log.msg("Topic from certificate is " + topic)
+
+    # Check if our socket already exists
+    address = FilePath(socket_path)
+    if address.exists():
+        raise SystemExit("Cannot listen on an existing path")
+
+    # Start listening on the socket
+    factory = EmailPushNotificationFactory(databasePool, topic)
+    port = reactor.listenUNIX(address.path, factory)
+    reactor.run()
+
+
+if __name__ == "__main__":
+    main("/tmp/xapsd.sock", "/tmp/xapsd.db", "/home/stefan/certificate.pem", "/home/stefan/key.pem")
