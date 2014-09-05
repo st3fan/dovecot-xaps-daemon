@@ -1,30 +1,72 @@
 
+iOS Push Email for Dovecot
+==========================
 
+What is this?
+-------------
 
+This project, together with the [dovecot-xaps-plugin](https://github.com/st3fan/dovecot-xaps-plugin) project, will enable push email for iOS devices that talk to your Dovecot 2.0.x IMAP server. This is specially useful for people who are migrating away from running email services on OS X Server and want to keep the Push Email ability.
 
-Converting the certificate
+> Please note that it is not possible to use this project without legally owning a copy of OS X Server. Please do not pirate OS X Server. Instead you can find it on the [Mac App Store](https://itunes.apple.com/ca/app/os-x-server/id714547929?mt=12).
+
+High Level Overview
+-------------------
+
+There are two parts to enabling iOS Push Email. You will need both parts for this to work.
+
+First you need to install the Dovecot plugins from the [dovecot-xaps-plugin](https://github.com/st3fan/dovecot-xaps-plugin) project. How do to that is documented in the README file in that project. The Dovecot plugin adds support for the `XAPPLEPUSHSERVICE` IMAP extension that will let iOS devices register themselves to receive native push notifications for new email arrival.
+
+(Apple did not document this feature, but it did publish the source code for all their Dovecot patches on the [Apple Open Source project site](http://www.opensource.apple.com/source/dovecot/dovecot-293/), which include this feature. So although I was not able to follow a specification, I was able to read their open source project and do a clean implementation with all original code.)
+
+Second, you need to install a daemon process (contained in this project) that will be responsible for receiving new email notifications from the Dovecot Local Delivery Agent and transforming those into native Apple Push Notifications.
+
+Installation
+============
+
+Prerequisites
+-------------
+
+You are going to need the following things to get this going:
+
+* Some patience and willingness to experiment - Although I run this project in production, it is still a very early version and it may contain bugs.
+* Because you will need a certificate to talk to the Apple Push Notifications Service, you can only run this software if you are migrating away from an existing OS X Server setup where you had Push Email enabled.
+* This software has only been tested on Ubuntu 12.04.5 with Dovecot 2.0.19. So ideally you have a mail server with the same specifications, or something very similar.
+
+Exporting and converting the certificate
+----------------------------------------
 
 First you have to export the certificate that is stored on your OS X
-Server. Do this by opening Keychain.app and finding the certificate in
-the System directory
+Server. Do this by opening Keychain.app and select the System keychain and the Certificates category. locate the certificate by expanding the ones that start with *APSP:* and look for a private key named `com.apple.servermgrd.apns.mail`.
+
+Now export the certficate by selecting it and then choose *Export Items* from the *File* menu. You want to store the certificate as PushEmail on your Desktop as a *.p12* file.
+
+Then, open a terminal window and execute the following commands:
 
 ```
-openssl pkcs12 -in ExportedCertificate.p12 -nocerts -nodes -out key.pem
-openssl pkcs12 -in ExportedCertificate.p12 -clcerts -nokeys -out certificate.pem
+cd ~/Desktop
+openssl pkcs12 -in PushEmail.p12 -nocerts -nodes -out key.pem
+openssl pkcs12 -in PushEMail.p12 -clcerts -nokeys -out certificate.pem
 ```
 
-You can test if the certificate and key are correct by making a
-connection to the apple push notifications gateway:
+You will be asked for a password, which is the same password that you entered when you exported the certificate.
+
+You can test if the certificate and key are correct by making a connection to the apple push notifications gateway:
 
 ```
 openssl s_client -connect gateway.push.apple.com:2195 -cert certificate.pem -key key.pem
 ```
 
-The connection may close but check if you see `Verify return code: 0 (ok)` appear.
+The connection may close but check if you see something like `Verify return code: 0 (ok)` appear.
 
-You now have your exported certificate and private key stored in two
-separate PEM encoded files that can be used by the xapsd daemon. By
-default the daemon will look for these files in the following location:
+You now have your exported certificate and private key stored in two separate PEM encoded files that can be used by the xapsd daemon.
+
+Copy these two files to your Dovecot server.
+
+By default the `xapsd` daemon will look for these files in the following location:
 
  * `/etc/xapsd/certificate.pem`
  * `/etc/xapsd/key.pem`
+
+Installing and Running the Daemon
+---------------------------------
+
