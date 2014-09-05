@@ -9,6 +9,13 @@ This project, together with the [dovecot-xaps-plugin](https://github.com/st3fan/
 
 > Please note that it is not possible to use this project without legally owning a copy of OS X Server. You can purchase OS X Server on the [Mac App Store](https://itunes.apple.com/ca/app/os-x-server/id714547929?mt=12) or download it for free if you are a registered Mac or iOS developer.
 
+What is the advantage of push?
+------------------------------
+
+Without Push, your iPhone will Fetch email periodically. This means that mail is delayed and that your device will use precious power to connect to a remote IMAP server.
+
+so using native Push messages means that your phone will receive new email notifications over a highly optimized connection to iCloud that it already has for other purposes.
+
 High Level Overview
 -------------------
 
