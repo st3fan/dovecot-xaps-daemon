@@ -14,7 +14,7 @@ What is the advantage of push?
 
 Without Push, your iPhone will Fetch email periodically. This means that mail is delayed and that your device will use precious power to connect to a remote IMAP server.
 
-so using native Push messages means that your phone will receive new email notifications over a highly optimized connection to iCloud that it already has for other purposes.
+Using native Push messages means that your phone will receive new email notifications over a highly optimized connection to iCloud that it already has for other purposes.
 
 High Level Overview
 -------------------
@@ -23,7 +23,7 @@ There are two parts to enabling iOS Push Email. You will need both parts for thi
 
 First you need to install the Dovecot plugins from the [dovecot-xaps-plugin](https://github.com/st3fan/dovecot-xaps-plugin) project. How do to that is documented in the README file in that project. The Dovecot plugin adds support for the `XAPPLEPUSHSERVICE` IMAP extension that will let iOS devices register themselves to receive native push notifications for new email arrival.
 
-(Apple did not document this feature, but it did publish the source code for all their Dovecot patches on the [Apple Open Source project site](http://www.opensource.apple.com/source/dovecot/dovecot-293/), which include this feature. So although I was not able to follow a specification, I was able to read their open source project and do a clean implementation with all original code.)
+(Apple did not document this feature, but it did publish the source code for all their Dovecot patches on the [Apple Open Source project site](http://www.opensource.apple.com/source/dovecot/dovecot-293/), which include this feature. Although I was not able to follow a specification, I was able to read their open source project and do a clean implementation with all original code.)
 
 Second, you need to install a daemon process (contained in this project) that will be responsible for receiving new email notifications from the Dovecot Local Delivery Agent and transforming those into native Apple Push Notifications.
 
