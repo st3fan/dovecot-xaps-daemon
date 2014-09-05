@@ -70,3 +70,27 @@ By default the `xapsd` daemon will look for these files in the following locatio
 Installing and Running the Daemon
 ---------------------------------
 
+Because this code is work in progress, it currently is not packaged properly as a good behaving background process. The following instructions will work fine but will likely change later on.
+
+First, install the following Ubuntu 12.04.5 packages, or equivalent for your operating system:
+
+```
+sudo apt-get install git python-twisted
+```
+
+Then clone this project:
+
+```
+git clone https://github.com/st3fan/dovecot-xaps-daemon.git
+```
+
+You can now run the daemon as follows:
+
+```
+cd dovecot-xaps-daemon
+./xapsd --socket=/tmp/xapsd.sock --database=$HOME/xapsd.json --certificate=$HOME/certificate.pem --key=$HOME/key.pem
+```
+
+This assumes that you have the exported `certificate.pem` and `key.pem` files in your home directory.
+
+The daemon is verbose and should print out a bunch of informational messages. If you see errors, please file a bug.
