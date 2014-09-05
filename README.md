@@ -43,11 +43,11 @@ Exporting and converting the certificate
 ----------------------------------------
 
 First you have to export the certificate that is stored on your OS X
-Server. Do this by opening Keychain.app and select the System keychain and the Certificates category. locate the certificate by expanding the ones that start with *APSP:* and look for a private key named `com.apple.servermgrd.apns.mail`.
+Server. Do this by opening Keychain.app and select the System keychain and the Certificates category. Locate the right certificate by expanding those whose name start with *APSP:* and then look for the certificate with a private key that is named `com.apple.servermgrd.apns.mail`.
 
-Now export the certficate by selecting it and then choose *Export Items* from the *File* menu. You want to store the certificate as PushEmail on your Desktop as a *.p12* file.
+Now export that certficate by selecting it and then choose *Export Items* from the *File* menu. You want to store the certificate as PushEmail on your Desktop as a *Personal Information Exchange (.p12)* file. You will be asked to secure this exported certificate with a password. This is a new password and not your login password.
 
-Then, open a terminal window and execute the following commands:
+Then, start *Terminal.app* and execute the following commands:
 
 ```
 cd ~/Desktop
@@ -55,7 +55,7 @@ openssl pkcs12 -in PushEmail.p12 -nocerts -nodes -out key.pem
 openssl pkcs12 -in PushEMail.p12 -clcerts -nokeys -out certificate.pem
 ```
 
-You will be asked for a password, which is the same password that you entered when you exported the certificate.
+You will be asked for a password, which should be the same password that you entered when you exported the certificate.
 
 You can test if the certificate and key are correct by making a connection to the apple push notifications gateway:
 
@@ -69,15 +69,10 @@ You now have your exported certificate and private key stored in two separate PE
 
 Copy these two files to your Dovecot server.
 
-By default the `xapsd` daemon will look for these files in the following location:
-
- * `/etc/xapsd/certificate.pem`
- * `/etc/xapsd/key.pem`
-
 Installing and Running the Daemon
 ---------------------------------
 
-Because this code is work in progress, it currently is not packaged properly as a good behaving background process. The following instructions will work fine but will likely change later on.
+Because this code is work in progress, it currently is not packaged properly as a good behaving background process. I recommend following the instructions below in a `screen` or `tmux` session so that it is easy to keep the daemon running. The next release will have better support for running this as a background service.
 
 First, install the following Ubuntu 12.04.5 packages, or equivalent for your operating system:
 
@@ -98,6 +93,6 @@ cd dovecot-xaps-daemon
 ./xapsd --socket=/tmp/xapsd.sock --database=$HOME/xapsd.json --certificate=$HOME/certificate.pem --key=$HOME/key.pem
 ```
 
-This assumes that you have the exported `certificate.pem` and `key.pem` files in your home directory.
+This assumes that you have the exported `certificate.pem` and `key.pem` files in your home directory. The database file will be created by the daemon. It will contain the mappings between the IMAP users, their mail accounts and the iOS devices.
 
-The daemon is verbose and should print out a bunch of informational messages. If you see errors, please file a bug.
+The daemon is verbose and should print out a bunch of informational messages. If you see errors, please [file a bug](https://github.com/st3fan/dovecot-xaps-daemon/issues/new).
