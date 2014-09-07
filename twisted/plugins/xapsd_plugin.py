@@ -23,6 +23,8 @@
 #
 
 
+from OpenSSL.crypto import load_certificate, FILETYPE_PEM
+
 from zope.interface import implements
 
 from twisted.application.internet import SSLClient, UNIXServer
@@ -50,7 +52,7 @@ class Options(usage.Options):
 def parseTopicFromCertificate(certificatePath):
     with open(certificatePath) as fp:
         certificateData = fp.read()
-        certificate = crypto.load_certificate(crypto.FILETYPE_PEM, certificateData)
+        certificate = load_certificate(FILETYPE_PEM, certificateData)
         subjectComponents = dict(certificate.get_subject().get_components())
         return subjectComponents.get('UID')
 
