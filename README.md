@@ -90,9 +90,9 @@ You can now run the daemon as follows:
 
 ```
 cd dovecot-xaps-daemon
-./xapsd --socket=/tmp/xapsd.sock --database=$HOME/xapsd.json --certificate=$HOME/certificate.pem --key=$HOME/key.pem
+twistd -n xapsd --key=$HOME/key.pem --certificate=$HOMR/certificate.pem --database=$HOME/xapsd.json --socket=/tmp/xapsd.sock
 ```
 
-This assumes that you have the exported `certificate.pem` and `key.pem` files in your home directory. The database file will be created by the daemon. It will contain the mappings between the IMAP users, their mail accounts and the iOS devices.
+This assumes that you have the exported `certificate.pem` and `key.pem` files in your home directory. The database file will be created by the daemon. It will contain the mappings between the IMAP users, their mail accounts and the iOS devices. It is a simple JSON file so you can look at it manually by opening it in a text editor.
 
 The daemon is verbose and should print out a bunch of informational messages. If you see errors, please [file a bug](https://github.com/st3fan/dovecot-xaps-daemon/issues/new).
