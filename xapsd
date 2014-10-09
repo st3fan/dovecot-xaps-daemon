@@ -245,8 +245,8 @@ def main(socket_path, database_path, certificate_path, key_path):
 if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(prog="xapsd")
-    parser.add_argument("--socket", default="/var/run/xapsd.sock")
-    parser.add_argument("--database", default="/var/lib/xapsd.json")
+    parser.add_argument("--socket", default="/var/run/dovecot/xapsd.sock")
+    parser.add_argument("--database", default="/var/lib/dovecot/xapsd.json")
     parser.add_argument("--certificate", default="/etc/xapsd/certificate.pem")
     parser.add_argument("--key", default="/etc/xapsd/key.pem")
 
