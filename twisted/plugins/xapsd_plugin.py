@@ -43,7 +43,7 @@ class Options(usage.Options):
         ["socket", "", "/var/run/dovecot/xapsd", "Path to the socket"],
         ["database", "", "/var/lib/dovecot/xapsd.json", "Path to the registration database"],
         ["key", "", "/etc/xapsd/key.pem", "Path to the private key PEM file"],
-        ["certificate", "", "/etc/apsd/certificate.pem", "Path to the certificate PEM file"],
+        ["certificate", "", "/etc/xapsd/certificate.pem", "Path to the certificate PEM file"],
         ["apns-host", "", "gateway.push.apple.com", "APNS Hostname"],
         ["apns-port", "", "2195", "APNS Port"],
     ]
