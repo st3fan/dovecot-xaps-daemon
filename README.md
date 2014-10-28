@@ -65,6 +65,14 @@ openssl s_client -connect gateway.push.apple.com:2195 -cert certificate.pem -key
 
 The connection may close but check if you see something like `Verify return code: 0 (ok)` appear.
 
+If the connection fails and outputs `Verify return code: 20 (unable to get local issuer certificate)` the chain of trust might be broken. Download the root certificate entrust_2048_ca.cer from [Entrust] (https://www.entrust.net/downloads/root_index.cfm?) and issue the command appending -CAfile:
+
+```
+openssl s_client -connect gateway.push.apple.com:2195 -cert certificate.pem -key key.pem -CAfile entrust_2048_ca.cer
+```
+
+> TODO: Does this mean we also need to pass the CA file to the `xapsd` process?
+
 You now have your exported certificate and private key stored in two separate PEM encoded files that can be used by the xapsd daemon.
 
 Copy these two files to your Dovecot server.
