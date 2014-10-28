@@ -25,7 +25,6 @@
 #
 
 
-import argparse
 import collections
 import hashlib
 import json
@@ -242,14 +241,3 @@ def main(socket_path, database_path, certificate_path, key_path):
     reactor.run()
 
 
-if __name__ == "__main__":
-
-    parser = argparse.ArgumentParser(prog="xapsd")
-    parser.add_argument("--socket", default="/var/run/xapsd.sock")
-    parser.add_argument("--database", default="/var/lib/xapsd.json")
-    parser.add_argument("--certificate", default="/etc/xapsd/certificate.pem")
-    parser.add_argument("--key", default="/etc/xapsd/key.pem")
-
-    args = parser.parse_args()
-
-    main(args.socket, args.database, args.certificate, args.key)
