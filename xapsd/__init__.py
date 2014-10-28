@@ -21,19 +21,3 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-
-from setuptools import setup
-
-setup(name='dovecot-xaps-daemon',
-      version='0.2',
-      author='Stefan Arentz',
-      author_email='stefan@arentz.ca',
-      packages=['xapsd', 'twisted', 'twisted.plugins'],
-      url='https://github.com/st3fan/dovecot-xaps-daemon',
-      license='LICENSE',
-      description='Daemon for iOS Push Email Notifications',
-      install_requires=[
-          "Twisted==14.0.0",
-          "pyOpenSSL==0.14",
-          "service_identity==14.0.0",
-      ])

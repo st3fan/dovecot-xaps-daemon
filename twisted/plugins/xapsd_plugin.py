@@ -33,8 +33,8 @@ from twisted.internet.ssl import DefaultOpenSSLContextFactory
 from twisted.plugin import IPlugin
 from twisted.python import usage
 
-from xaps import XAPSFactory, RegistrationDatabase
-from apns import APNSClientFactory
+from xapsd.xaps import XAPSFactory, RegistrationDatabase
+from xapsd.apns import APNSClientFactory
 
 
 class Options(usage.Options):
