@@ -33,7 +33,7 @@ setup(name='dovecot-xaps-daemon',
       license='LICENSE',
       description='Daemon for iOS Push Email Notifications',
       install_requires=[
-          "Twisted==14.0.0",
+          "Twisted==14.0.2",
           "pyOpenSSL==0.14",
           "service_identity==14.0.0",
       ])
