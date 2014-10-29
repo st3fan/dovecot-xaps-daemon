@@ -107,7 +107,7 @@ class APNSClientFactory(ReconnectingClientFactory):
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
-        log.msg("APNSClientFactory.clientConnectionFailed")
+        log.msg("APNSClientFactory.clientConnectionFailed: " + str(reason))
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
     def clientConnectionMade(self, client):
