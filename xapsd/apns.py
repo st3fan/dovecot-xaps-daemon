@@ -69,7 +69,7 @@ class APNSProtocol(Protocol):
 
     def connectionLost(self, reason):
         log.msg("APNSProtocol.connectionLost")
-        self.factory.clientConnectionMade(self)
+        self.factory.clientConnectionLost(self)
 
     def dataReceived(self, data):
         log.msg("APNSProtocol.dataReceived: " + data.encode("hex"))
