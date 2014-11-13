@@ -65,11 +65,11 @@ class APNSProtocol(Protocol):
 
     def connectionMade(self):
         log.msg("APNSProtocol.connectionMade")
-        self.factory.clientConnectionMade(self)
+        self.factory.clientConnectionMadeCallback(self)
 
     def connectionLost(self, reason):
         log.msg("APNSProtocol.connectionLost")
-        self.factory.clientConnectionLost(self)
+        self.factory.clientConnectionLostCallback(self, reason)
 
     def dataReceived(self, data):
         log.msg("APNSProtocol.dataReceived: " + data.encode("hex"))
@@ -103,20 +103,20 @@ class APNSClientFactory(ReconnectingClientFactory):
         return protocol
 
     def clientConnectionLost(self, connector, reason):
-        log.msg("APNSClientFactory.clientConnectionLost")
+        log.msg("APNSClientFactory.clientConnectionLost: " + str(reason))
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
 
     def clientConnectionFailed(self, connector, reason):
         log.msg("APNSClientFactory.clientConnectionFailed: " + str(reason))
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
-    def clientConnectionMade(self, client):
-        log.msg("APNSClientFactory.clientConnectionMade")
+    def clientConnectionMadeCallback(self, client):
+        log.msg("APNSClientFactory.clientConnectionMadeCallback")
         self.client = client
         self.looper.start(2.5)
 
-    def clientConnectionLost(self, client):
-        log.msg("APNSClientConnectionLost")
+    def clientConnectionLostCallback(self, client, reason):
+        log.msg("APNSClientFactory.clientConnectionLostCallback")
         self.client = None
         self.looper.stop()
 
