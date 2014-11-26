@@ -52,7 +52,7 @@ Then, start *Terminal.app* and execute the following commands:
 ```
 cd ~/Desktop
 openssl pkcs12 -in PushEmail.p12 -nocerts -nodes -out key.pem
-openssl pkcs12 -in PushEMail.p12 -clcerts -nokeys -out certificate.pem
+openssl pkcs12 -in PushEmail.p12 -clcerts -nokeys -out certificate.pem
 ```
 
 You will be asked for a password, which should be the same password that you entered when you exported the certificate.
