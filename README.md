@@ -77,6 +77,8 @@ You now have your exported certificate and private key stored in two separate PE
 
 Copy these two files to your Dovecot server.
 
+NOTE: APNS certificates expire 1 year after they were originally issued by Apple, so they will need to be renewed or regenerated through the OS X Server application each year. Expiration information for these certificates can be found at the [Apple Push Certificates Portal](https://identity.apple.com/pushcert/).
+
 Installing and Running the Daemon
 ---------------------------------
 
