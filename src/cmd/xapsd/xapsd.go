@@ -37,8 +37,6 @@ import (
 	"net"
 	"os"
 	"strings"
-	"sync"
-	"time"
 )
 
 type command struct {
