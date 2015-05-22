@@ -77,30 +77,39 @@ You now have your exported certificate and private key stored in two separate PE
 
 Copy these two files to your Dovecot server.
 
-Installing and Running the Daemon
----------------------------------
+Compiling and Installing the Daemon
+-----------------------------------
+
+The daemon is written in Go. The easiest way to build it is with the [GB] (http://getgb.io/docs/install/) tool.
+
+```
+git checkout https://github.com/st3fan/dovecot-xaps-daemon.git
+cd dovecot-xaps-daemon
+gb build all
+```
+
+You can find the dameon in `bin/xapsd`.
+
+Running the Daemon
+------------------
 
 Because this code is work in progress, it currently is not packaged properly as a good behaving background process. I recommend following the instructions below in a `screen` or `tmux` session so that it is easy to keep the daemon running. The next release will have better support for running this as a background service.
 
-First, install the following Ubuntu 12.04.5 packages, or equivalent for your operating system:
+You can run the daemon as follows:
 
 ```
-sudo apt-get install git python-twisted
-```
-
-Then clone this project:
-
-```
-git clone https://github.com/st3fan/dovecot-xaps-daemon.git
-```
-
-You can now run the daemon as follows:
-
-```
-cd dovecot-xaps-daemon
-twistd -n xapsd --key=$HOME/key.pem --certificate=$HOME/certificate.pem --database=$HOME/xapsd.json --socket=/tmp/xapsd.sock
+bin/xapsd -key=$HOME/key.pem -certificate=$HOME/certificate.pem \
+  -database=$HOME/xapsd.json -socket=/tmp/xapsd.sock
 ```
 
 This assumes that you have the exported `certificate.pem` and `key.pem` files in your home directory. The database file will be created by the daemon. It will contain the mappings between the IMAP users, their mail accounts and the iOS devices. It is a simple JSON file so you can look at it manually by opening it in a text editor.
 
 The daemon is verbose and should print out a bunch of informational messages. If you see errors, please [file a bug](https://github.com/st3fan/dovecot-xaps-daemon/issues/new).
+
+
+Setting up Devices
+------------------
+
+Your iOS devices will discover that the server supports Push automatically the first time they connect. To force them to reconnect you can reboot the iOS device or turn Airport Mode on and off with a little delay in between.
+
+If you go to your Email settings, you should see that the account has switched to Push.
