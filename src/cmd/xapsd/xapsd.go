@@ -173,9 +173,6 @@ func handleRequest(conn net.Conn, client *apns.Client, db *Database) {
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
-
-		fmt.Println("INCOMING LINE", scanner.Text())
-
 		command, err := parseCommand(scanner.Text())
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Reading froms socket: ", err)
@@ -194,8 +191,6 @@ func handleRequest(conn net.Conn, client *apns.Client, db *Database) {
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintln(os.Stderr, "Reading froms socket: ", err)
 	}
-
-	fmt.Println("Done with connection %v", conn)
 }
 
 //
@@ -212,7 +207,6 @@ func handleRequest(conn net.Conn, client *apns.Client, db *Database) {
 //
 
 func handleRegister(conn net.Conn, cmd command, client *apns.Client, db *Database) {
-	fmt.Println("TRACE", "handleRegister")
 	// Make sure the subtopic is ok
 	subtopic, ok := cmd.getStringArg("aps-subtopic")
 	if !ok {
@@ -247,7 +241,6 @@ func handleRegister(conn net.Conn, cmd command, client *apns.Client, db *Databas
 	}
 
 	// Register this email/account-id/device-token combination
-	fmt.Println("TRACE", " ", "addRegistration", username, accountId, deviceToken, mailboxes)
 	err := db.addRegistration(username, accountId, deviceToken, mailboxes)
 	if err != nil {
 		writeError(conn, "Failed to register client: "+err.Error())
@@ -272,8 +265,6 @@ func handleRegister(conn net.Conn, cmd command, client *apns.Client, db *Databas
 //
 
 func handleNotify(conn net.Conn, cmd command, client *apns.Client, db *Database) {
-	fmt.Println("TRACE", "handleNotify")
-
 	// Make sure we got the required arguments
 	username, ok := cmd.getStringArg("dovecot-username")
 	if !ok {
@@ -287,7 +278,6 @@ func handleNotify(conn net.Conn, cmd command, client *apns.Client, db *Database)
 	}
 
 	// Find all the devices registered for this mailbox event
-	fmt.Println("TRACE", " ", "findRegistrations", username, mailbox)
 	registrations, err := db.findRegistrations(username, mailbox)
 	if err != nil {
 		writeError(conn, "Cannot lookup registrations: "+err.Error())
@@ -297,7 +287,6 @@ func handleNotify(conn net.Conn, cmd command, client *apns.Client, db *Database)
 	// Send a notification to all registered devices. We ignore failures
 	// because there is not a lot we can do.
 	for _, registration := range registrations {
-		fmt.Println("Sending a notification to", registration.DeviceToken)
 		sendNotification(registration, client)
 	}
 
