@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/st3fan/dovecot-xaps-daemon.svg)](https://travis-ci.org/st3fan/dovecot-xaps-daemon)
 
 iOS Push Email for Dovecot
 ==========================
