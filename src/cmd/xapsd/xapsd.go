@@ -126,6 +126,7 @@ func parseCommand(line string) (command, error) {
 	return cmd, nil
 }
 
+var debug = flag.Bool("debug", false, "TODO")
 var socket = flag.String("socket", "/var/run/xapsd/xapsd.sock", "TODO")
 var database = flag.String("database", "/var/lib/xapsd/database.json", "TODO")
 var key = flag.String("key", "/etc/xapsd/key.pem", "TODO")
@@ -163,9 +164,17 @@ func topicFromCertificate(filename string) (string, error) {
 func main() {
 	flag.Parse()
 
+	if *debug {
+		log.Println("[DEBUG] Opening database at", *database)
+	}
+
 	db, err := newDatabase(*database)
 	if err != nil {
 		log.Fatal("Cannot open database", *database, err.Error())
+	}
+
+	if *debug {
+		log.Println("[DEBUG] Listening on UNIX socket at", *socket)
 	}
 
 	listener, err := net.Listen("unix", *socket)
@@ -179,12 +188,22 @@ func main() {
 		log.Fatal("Could not chmod socket", err.Error())
 	}
 
-	fmt.Println("Listenening on", *socket)
+	if *debug {
+		log.Println("[DEBUG] Parsing", *certificate, "to obtain APNS Topic")
+	}
+
 	topic, err := topicFromCertificate(*certificate)
 	if err != nil {
 		log.Fatal("Could not parse apns topic from certificate: ", err.Error())
 	}
 
+	if *debug {
+		log.Println("[DEBUG] Topic is", topic)
+	}
+
+	if *debug {
+		log.Println("[DEBUG] Creating APNS client to", apns.ProductionGateway)
+	}
 	c, err := apns.NewClientWithFiles(apns.ProductionGateway, *certificate, *key)
 	if err != nil {
 		log.Fatal("Could not create client", err.Error())
@@ -198,6 +217,10 @@ func main() {
 		}
 
 		go handleRequest(conn, &c, db)
+		if *debug {
+			fmt.Println("[DEBUG] Accepted a connection")
+		}
+
 		go handleRequest(conn, &c, db, topic)
 	}
 }
@@ -207,6 +230,10 @@ func handleRequest(conn net.Conn, client *apns.Client, db *Database, topic strin
 
 	scanner := bufio.NewScanner(conn)
 	for scanner.Scan() {
+		if *debug {
+			log.Println("[DEBUG] Received request:", scanner.Text())
+		}
+
 		command, err := parseCommand(scanner.Text())
 		if err != nil {
 			fmt.Fprintln(os.Stderr, "Reading froms socket: ", err)
@@ -321,6 +348,9 @@ func handleNotify(conn net.Conn, cmd command, client *apns.Client, db *Database)
 	// Send a notification to all registered devices. We ignore failures
 	// because there is not a lot we can do.
 	for _, registration := range registrations {
+		if *debug {
+			log.Println("[DEBUG] Sending notification to", registration.AccountId, "/", registration.DeviceToken)
+		}
 		sendNotification(registration, client)
 	}
 
@@ -336,12 +366,22 @@ func sendNotification(reg Registration, client *apns.Client) {
 	notification.Priority = apns.PriorityImmediate
 	notification.Identifier = nextNotificationIdentifier()
 	client.Send(notification)
+	if *debug {
+		log.Printf("Payload: %+v", payload)
+		log.Printf("Notification: %+v", notification)
+	}
 }
 
 func writeError(conn net.Conn, msg string) {
+	if *debug {
+		log.Println("[DEBUG] Returning failure:", msg)
+	}
 	conn.Write([]byte("ERR" + " " + msg + "\n"))
 }
 
 func writeSuccess(conn net.Conn, msg string) {
+	if *debug {
+		log.Println("[DEBUG] Returning success:", msg)
+	}
 	conn.Write([]byte("OK" + " " + msg + "\n"))
 }
