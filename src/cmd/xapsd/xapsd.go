@@ -352,11 +352,6 @@ func sendNotification(reg Registration, client *apns.Client) {
 	notification.Payload = payload
 	notification.DeviceToken = reg.DeviceToken
 	client.Send(notification)
-
-	if *debug {
-		log.Printf("Payload: %+v", payload)
-		log.Printf("Notification: %+v", notification)
-	}
 }
 
 func writeError(conn net.Conn, msg string) {
