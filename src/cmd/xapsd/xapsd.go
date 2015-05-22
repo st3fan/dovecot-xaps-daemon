@@ -358,7 +358,7 @@ func writeError(conn net.Conn, msg string) {
 	if *debug {
 		log.Println("[DEBUG] Returning failure:", msg)
 	}
-	conn.Write([]byte("ERR" + " " + msg + "\n"))
+	conn.Write([]byte("ERROR" + " " + msg + "\n"))
 }
 
 func writeSuccess(conn net.Conn, msg string) {
