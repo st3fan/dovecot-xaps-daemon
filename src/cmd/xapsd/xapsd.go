@@ -108,12 +108,12 @@ func parseCommand(line string) (command, error) {
 	return cmd, nil
 }
 
-var debug = flag.Bool("debug", false, "TODO")
-var socket = flag.String("socket", "/var/run/xapsd/xapsd.sock", "TODO")
-var database = flag.String("database", "/var/lib/xapsd/database.json", "TODO")
-var key = flag.String("key", "/etc/xapsd/key.pem", "TODO")
+var debug = flag.Bool("debug", false, "enable debug logging")
+var socket = flag.String("socket", "/var/run/xapsd/xapsd.sock", "path to the socket for Dovecot")
+var database = flag.String("database", "/var/lib/xapsd/database.json", "path to the database file")
+var key = flag.String("key", "/etc/xapsd/key.pem", "path to the pem file containing the private key")
 
-var certificate = flag.String("certificate", "/etc/xapsd/certificate.pem", "TODO")
+var certificate = flag.String("certificate", "/etc/xapsd/certificate.pem", "path to the pem file containing the certificate")
 
 func topicFromCertificate(filename string) (string, error) {
 	data, err := ioutil.ReadFile(filename)
