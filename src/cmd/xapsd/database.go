@@ -27,6 +27,7 @@ package main
 import (
 	"encoding/json"
 	"io/ioutil"
+	"os"
 )
 
 type Registration struct {
@@ -60,19 +61,32 @@ type Database struct {
 }
 
 func newDatabase(filename string) (*Database, error) {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-
-	var db Database = Database{filename: filename, Users: make(map[string]User)}
-	if len(data) != 0 {
-		if err := json.Unmarshal(data, &db); err != nil {
+	// TODO This is not awesome.
+	// Let's rewrite. Like replace this with Open(..., "rw") instead of ReadFile()
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		db := &Database{filename: filename, Users: make(map[string]User)}
+		if err := db.write(); err != nil {
 			return nil, err
 		}
-	}
+		return db, nil
+	} else if err != nil {
+		return nil, err
+	} else {
+		data, err := ioutil.ReadFile(filename)
+		if err != nil {
+			return nil, err
+		}
 
-	return &db, nil
+		var db Database = Database{filename: filename, Users: make(map[string]User)}
+		if len(data) != 0 {
+			if err := json.Unmarshal(data, &db); err != nil {
+				return nil, err
+			}
+		}
+
+		return &db, nil
+	}
 }
 
 func (db *Database) write() error {
