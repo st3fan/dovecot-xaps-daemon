@@ -26,10 +26,13 @@ package main
 
 import (
 	"bufio"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
 	"flag"
 	"fmt"
 	"github.com/st3fan/apns"
+	"io/ioutil"
 	"log"
 	"net"
 	"os"
@@ -129,7 +132,33 @@ var key = flag.String("key", "/etc/xapsd/key.pem", "TODO")
 
 var certificate = flag.String("certificate", "/etc/xapsd/certificate.pem", "TODO")
 
-//var apns = flag.String("apns", "gateway.push.apple.com:2195", "TODO")
+func topicFromCertificate(filename string) (string, error) {
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return "", err
+	}
+
+	block, _ := pem.Decode([]byte(data))
+	if block == nil {
+		return "", errors.New("Could not decode PEM block from certificate")
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		return "", err
+	}
+
+	if len(cert.Subject.Names) == 0 {
+		return "", errors.New("Subject.Names is empty")
+	}
+
+	oidUid := []int{0, 9, 2342, 19200300, 100, 1, 1}
+	if !cert.Subject.Names[0].Type.Equal(oidUid) {
+		return "", errors.New("Did not find a Subject.Names[0] with type 0.9.2342.19200300.100.1.1")
+	}
+
+	return cert.Subject.Names[0].Value.(string), nil
+}
 
 func main() {
 	flag.Parse()
@@ -151,6 +180,10 @@ func main() {
 	}
 
 	fmt.Println("Listenening on", *socket)
+	topic, err := topicFromCertificate(*certificate)
+	if err != nil {
+		log.Fatal("Could not parse apns topic from certificate: ", err.Error())
+	}
 
 	c, err := apns.NewClientWithFiles(apns.ProductionGateway, *certificate, *key)
 	if err != nil {
@@ -165,10 +198,11 @@ func main() {
 		}
 
 		go handleRequest(conn, &c, db)
+		go handleRequest(conn, &c, db, topic)
 	}
 }
 
-func handleRequest(conn net.Conn, client *apns.Client, db *Database) {
+func handleRequest(conn net.Conn, client *apns.Client, db *Database, topic string) {
 	defer conn.Close()
 
 	scanner := bufio.NewScanner(conn)
@@ -180,7 +214,7 @@ func handleRequest(conn net.Conn, client *apns.Client, db *Database) {
 
 		switch command.name {
 		case "REGISTER":
-			handleRegister(conn, command, client, db)
+			handleRegister(conn, command, client, db, topic)
 		case "NOTIFY":
 			handleNotify(conn, command, client, db)
 		default:
@@ -206,7 +240,7 @@ func handleRequest(conn net.Conn, client *apns.Client, db *Database) {
 // notifications.
 //
 
-func handleRegister(conn net.Conn, cmd command, client *apns.Client, db *Database) {
+func handleRegister(conn net.Conn, cmd command, client *apns.Client, db *Database, topic string) {
 	// Make sure the subtopic is ok
 	subtopic, ok := cmd.getStringArg("aps-subtopic")
 	if !ok {
@@ -247,7 +281,7 @@ func handleRegister(conn net.Conn, cmd command, client *apns.Client, db *Databas
 		return
 	}
 
-	writeSuccess(conn, "topic-name-here") // TODO
+	writeSuccess(conn, topic)
 }
 
 //
