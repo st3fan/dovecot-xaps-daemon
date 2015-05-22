@@ -41,22 +41,6 @@ import (
 	"time"
 )
 
-var notificationIdentifier uint32
-var notificationIdentifierMutex sync.Mutex
-
-func initializeNotificationIdentifier() {
-	notificationIdentifier = uint32(time.Now().Unix())
-}
-
-func nextNotificationIdentifier() uint32 {
-	notificationIdentifierMutex.Lock()
-	defer notificationIdentifierMutex.Unlock()
-	notificationIdentifier += 1
-	return notificationIdentifier
-}
-
-//
-
 type command struct {
 	name string
 	args map[string]interface{}
@@ -204,6 +188,7 @@ func main() {
 	if *debug {
 		log.Println("[DEBUG] Creating APNS client to", apns.ProductionGateway)
 	}
+
 	c, err := apns.NewClientWithFiles(apns.ProductionGateway, *certificate, *key)
 	if err != nil {
 		log.Fatal("Could not create client", err.Error())
@@ -222,7 +207,6 @@ func main() {
 			os.Exit(1)
 		}
 
-		go handleRequest(conn, &c, db)
 		if *debug {
 			fmt.Println("[DEBUG] Accepted a connection")
 		}
@@ -369,9 +353,8 @@ func sendNotification(reg Registration, client *apns.Client) {
 	notification := apns.NewNotification()
 	notification.Payload = payload
 	notification.DeviceToken = reg.DeviceToken
-	notification.Priority = apns.PriorityImmediate
-	notification.Identifier = nextNotificationIdentifier()
 	client.Send(notification)
+
 	if *debug {
 		log.Printf("Payload: %+v", payload)
 		log.Printf("Notification: %+v", notification)
