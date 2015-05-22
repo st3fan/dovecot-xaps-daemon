@@ -145,6 +145,11 @@ func main() {
 	}
 	defer os.Remove(*socket)
 
+	// TODO What is the proper way to limit Dovecot to this socket
+	if err := os.Chmod(*socket, 0777); err != nil {
+		log.Fatal("Could not chmod socket", err.Error())
+	}
+
 	fmt.Println("Listenening on", *socket)
 
 	c, err := apns.NewClientWithFiles(apns.ProductionGateway, *certificate, *key)
