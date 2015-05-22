@@ -1,0 +1,31 @@
+{
+  "Users": {
+    "alice": {
+      "Accounts": {
+        "aliceaccountid1": {
+          "DeviceToken": "alicedevicetoken1",
+          "Mailboxes": [
+            "Inbox"
+          ]
+        }
+      }
+    },
+    "stefan": {
+      "Accounts": {
+        "stefanaccountid1": {
+          "DeviceToken": "stefandevicetoken1",
+          "Mailboxes": [
+            "Inbox"
+          ]
+        },
+        "stefanaccountid2": {
+          "DeviceToken": "stefandevicetoken2",
+          "Mailboxes": [
+            "Inbox",
+            "Ham"
+          ]
+        }
+      }
+    }
+  }
+}
