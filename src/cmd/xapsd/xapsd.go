@@ -209,6 +209,12 @@ func main() {
 		log.Fatal("Could not create client", err.Error())
 	}
 
+	go func() {
+		for f := range c.FailedNotifs {
+			fmt.Println("Notification", f.Notif.ID, "failed with", f.Err.Error())
+		}
+	}()
+
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
