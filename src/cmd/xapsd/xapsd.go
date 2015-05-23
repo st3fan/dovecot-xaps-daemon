@@ -30,7 +30,6 @@ import (
 	"encoding/pem"
 	"errors"
 	"flag"
-	"fmt"
 	"github.com/st3fan/apns"
 	"io/ioutil"
 	"log"
@@ -38,6 +37,8 @@ import (
 	"os"
 	"strings"
 )
+
+const Version = "1.0b1"
 
 type command struct {
 	name string
@@ -201,19 +202,21 @@ func main() {
 
 	go func() {
 		for f := range c.FailedNotifs {
-			fmt.Println("Notification", f.Notif.ID, "failed with", f.Err.Error())
+			log.Println("Notification", f.Notif.ID, "failed with", f.Err.Error())
 		}
 	}()
+
+	log.Printf("Starting xapsd %s on %s", Version, *socket)
 
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			fmt.Println("Failed to accept connection: ", err.Error())
+			log.Println("Failed to accept connection: ", err.Error())
 			os.Exit(1)
 		}
 
 		if *debug {
-			fmt.Println("[DEBUG] Accepted a connection")
+			log.Println("[DEBUG] Accepted a connection")
 		}
 
 		go handleRequest(conn, &c, db, topic)
@@ -231,7 +234,7 @@ func handleRequest(conn net.Conn, client *apns.Client, db *Database, topic strin
 
 		command, err := parseCommand(scanner.Text())
 		if err != nil {
-			fmt.Fprintln(os.Stderr, "Reading froms socket: ", err)
+			log.Println("Reading froms socket: ", err)
 		}
 
 		switch command.name {
@@ -245,7 +248,7 @@ func handleRequest(conn net.Conn, client *apns.Client, db *Database, topic strin
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintln(os.Stderr, "Reading froms socket: ", err)
+		log.Println("Reading froms socket: ", err)
 	}
 }
 
