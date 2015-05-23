@@ -152,7 +152,9 @@ func main() {
 
 	db, err := newDatabase(*database)
 	if err != nil {
-		log.Fatal("Cannot open database", *database, err.Error())
+		log.Fatal("Cannot open database: ", *database, err.Error())
+	}
+
 	// Delete the socket is it already exists
 	if _, err := os.Stat(*socket); err == nil {
 		if err := os.Remove(*socket); err != nil {
@@ -166,13 +168,13 @@ func main() {
 
 	listener, err := net.Listen("unix", *socket)
 	if err != nil {
-		log.Fatal("Could not create socket", err.Error())
+		log.Fatal("Could not create socket: ", err.Error())
 	}
 	defer os.Remove(*socket)
 
 	// TODO What is the proper way to limit Dovecot to this socket
 	if err := os.Chmod(*socket, 0777); err != nil {
-		log.Fatal("Could not chmod socket", err.Error())
+		log.Fatal("Could not chmod socket: ", err.Error())
 	}
 
 	if *debug {
@@ -194,7 +196,7 @@ func main() {
 
 	c, err := apns.NewClientWithFiles(apns.ProductionGateway, *certificate, *key)
 	if err != nil {
-		log.Fatal("Could not create client", err.Error())
+		log.Fatal("Could not create client: ", err.Error())
 	}
 
 	go func() {
