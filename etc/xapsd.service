@@ -1,0 +1,14 @@
+[Unit]
+Description=Apple Push Notification Service
+After=network.target auditd.service
+
+[Service]
+User=xapsd
+ExecStart=/usr/local/sbin/xapsd
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
