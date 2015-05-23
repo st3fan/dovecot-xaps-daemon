@@ -153,6 +153,11 @@ func main() {
 	db, err := newDatabase(*database)
 	if err != nil {
 		log.Fatal("Cannot open database", *database, err.Error())
+	// Delete the socket is it already exists
+	if _, err := os.Stat(*socket); err == nil {
+		if err := os.Remove(*socket); err != nil {
+			log.Fatal("Could not delete existing socket: ", *socket, err.Error())
+		}
 	}
 
 	if *debug {
