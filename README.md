@@ -86,7 +86,7 @@ Compiling and Installing the Daemon
 The daemon is written in Go. The easiest way to build it is with the [GB] (http://getgb.io/docs/install/) tool.
 
 ```
-git checkout https://github.com/st3fan/dovecot-xaps-daemon.git
+git clone https://github.com/st3fan/dovecot-xaps-daemon.git
 cd dovecot-xaps-daemon
 gb build all
 ```
