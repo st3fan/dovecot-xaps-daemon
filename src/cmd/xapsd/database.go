@@ -28,7 +28,10 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
+	"sync"
 )
+
+var dbMutex = &sync.Mutex{}
 
 type Registration struct {
 	DeviceToken string
@@ -99,6 +102,9 @@ func (db *Database) write() error {
 }
 
 func (db *Database) addRegistration(username, accountId, deviceToken string, mailboxes []string) error {
+	//  mutual write access to database issue #16 xaps-plugin
+	dbMutex.Lock()
+
 	// Ensure the User exists
 	if _, ok := db.Users[username]; !ok {
 		db.Users[username] = User{Accounts: make(map[string]Account)}
@@ -112,7 +118,11 @@ func (db *Database) addRegistration(username, accountId, deviceToken string, mai
 	// Set or update the Registration
 	db.Users[username].Accounts[accountId] = Account{DeviceToken: deviceToken, Mailboxes: mailboxes}
 
-	return db.write()
+	err := db.write()
+
+	// release mutex
+	dbMutex.Unlock()
+	return err
 }
 
 func (db *Database) findRegistrations(username, mailbox string) ([]Registration, error) {
