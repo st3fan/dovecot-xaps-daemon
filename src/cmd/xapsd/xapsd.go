@@ -36,6 +36,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 )
 
 const Version = "1.0b1"
@@ -361,6 +362,10 @@ func sendNotification(reg Registration, client *apns.Client) {
 	notification := apns.NewNotification()
 	notification.Payload = payload
 	notification.DeviceToken = reg.DeviceToken
+	// set expiration
+	// 	https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/CommunicatingwithAPNs.html
+	t := time.Now().Add(24 * time.Hour)
+	notification.Expiration = &t
 	client.Send(notification)
 }
 
