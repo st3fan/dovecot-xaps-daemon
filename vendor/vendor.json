@@ -3,12 +3,6 @@
 	"ignore": "",
 	"package": [
 		{
-			"checksumSHA1": "9AZkJtMAQfhrNxDJrieeiyqDT6M=",
-			"path": "github.com/st3fan/apns",
-			"revision": "eb2fb2e4559edf736521de4bac33854f652187b5",
-			"revisionTime": "2015-10-06T22:41:27Z"
-		},
-		{
 			"checksumSHA1": "u9flHrt1pNDAORt99y9528/t4K4=",
 			"path": "github.com/timehop/apns",
 			"revision": "7dfe710e494f7a058c9a84b0dac547086e419ae9",

@@ -31,7 +31,7 @@ import (
 	"encoding/pem"
 	"errors"
 	"flag"
-	"github.com/st3fan/apns"
+	"github.com/timehop/apns"
 	"io/ioutil"
 	"log"
 	"net"
