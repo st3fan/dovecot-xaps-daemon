@@ -168,8 +168,8 @@ var _ = Describe("Notifications", func() {
 	Describe("APS", func() {
 		Context("badge with a zero (clears notifications)", func() {
 			It("should contain zero", func() {
-				zero := 0
-				a := apns.APS{Badge: &zero}
+				a := apns.APS{}
+				a.Badge.Set(0)
 
 				j, err := json.Marshal(a)
 
@@ -185,6 +185,16 @@ var _ = Describe("Notifications", func() {
 
 				Expect(err).To(BeNil())
 				Expect(j).To(Equal([]byte(`{}`)))
+			})
+		})
+		Context("email account id", func() {
+			It("should contain the account id", func() {
+				a := apns.APS{AccountId: "1234"}
+
+				j, err := json.Marshal(a)
+
+				Expect(err).To(BeNil())
+				Expect(j).To(Equal([]byte(`{"account-id":"1234"}`)))
 			})
 		})
 	})
