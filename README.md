@@ -38,7 +38,7 @@ You are going to need the following things to get this going:
 
 * Some patience and willingness to experiment - Although I run this project in production, it is still a very early version and it may contain bugs.
 * Because you will need a certificate to talk to the Apple Push Notifications Service, you can only run this software if you are migrating away from an existing OS X Server setup where you had Push Email enabled.
-* This software has only been tested on Ubuntu 12.04.5 with Dovecot 2.0.19. So ideally you have a mail server with the same specifications, or something very similar.
+* Dovecot > 2.2.11 (which fixed an EPIPE Bug) AND Dovecot < 2.3.0 (which has several changes in the mailbox_vfuncs signatures) 
 
 Exporting and converting the certificate
 ----------------------------------------
@@ -83,15 +83,13 @@ Copy these two files to your Dovecot server.
 Compiling and Installing the Daemon
 -----------------------------------
 
-The daemon is written in Go. The easiest way to build it is with the [GB] (http://getgb.io/docs/install/) tool.
+The daemon is written in Go. The easiest way to build it is with go itself.
 
 ```
 git clone https://github.com/st3fan/dovecot-xaps-daemon.git
 cd dovecot-xaps-daemon
-gb build all
+go build -o xapsd
 ```
-
-You can find the dameon in `bin/xapsd`.
 
 Running the Daemon
 ------------------
