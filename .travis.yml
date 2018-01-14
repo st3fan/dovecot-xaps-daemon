@@ -1,6 +1,5 @@
 language: go
 
 install:
-  - go get github.com/constabulary/gb/...
 
-script: gb test all
+script: go test -v ./
