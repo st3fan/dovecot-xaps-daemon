@@ -38,7 +38,7 @@ You are going to need the following things to get this going:
 
 * Some patience and willingness to experiment - Although I run this project in production, it is still a very early version and it may contain bugs.
 * Because you will need a certificate to talk to the Apple Push Notifications Service, you can only run this software if you are migrating away from an existing OS X Server setup where you had Push Email enabled.
-* Dovecot > 2.2.11 (which fixed an EPIPE Bug) AND Dovecot < 2.3.0 (which has several changes in the mailbox_vfuncs signatures) 
+* Dovecot > 2.2.19 (which introduced the push-notification plugin) 
 
 Exporting and converting the certificate
 ----------------------------------------
@@ -114,3 +114,14 @@ Setting up Devices
 Your iOS devices will discover that the server supports Push automatically the first time they connect. To force them to reconnect you can reboot the iOS device or turn Airport Mode on and off with a little delay in between.
 
 If you go to your Email settings, you should see that the account has switched to Push.
+
+Privacy
+-------
+
+Each time a message is received, dovecot-xaps-daemon sends Apple a TLS-secured HTTP request, which Apple uses to send a notification over a persistent connection maintained to between the user's device and Apple's push notification servers.
+
+The request contains the following information: a device token (used by Apple to identify which device should be sent a push notification), an account ID (used by the user's device to identify which account it should poll for new messages), and a certificate topic. The certificate topic identifies the server to Apple and is hardcoded in the certificate issued by Apple and setup in the configuration for dovecot-xaps-daemon.
+
+By virtue of having made the request, Apple also learns the IP address of the server sending the push notification, and the time at which the push notification is sent by the server to Apple.
+
+While no information typically thought of as private is directly exposed to Apple, some difficult to avoid leaks still occur. For example, Apple could correlate that two or more users frequently receive a push notification at almost the exact same time. From this, Apple could potentially infer that these users are receiving the same message. For most users this may not be a significant new loss of privacy.
