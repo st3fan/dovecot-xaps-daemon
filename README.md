@@ -100,7 +100,7 @@ You can run the daemon as follows:
 
 ```
 bin/xapsd -key=$HOME/key.pem -certificate=$HOME/certificate.pem \
-  -database=$HOME/xapsd.json -socket=/tmp/xapsd.sock
+-database=$HOME/xapsd.json -socket=/var/run/xapsd/xapsd.sock
 ```
 
 This assumes that you have the exported `certificate.pem` and `key.pem` files in your home directory. The database file will be created by the daemon. It will contain the mappings between the IMAP users, their mail accounts and the iOS devices. It is a simple JSON file so you can look at it manually by opening it in a text editor.
