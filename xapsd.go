@@ -26,12 +26,12 @@
 package main
 
 import (
+	"dovecot-xaps-daemon/aps"
+	"dovecot-xaps-daemon/database"
+	"dovecot-xaps-daemon/logger"
+	"dovecot-xaps-daemon/socket"
 	"flag"
 	log "github.com/sirupsen/logrus"
-	"dovecot-xaps-daemon/aps"
-	"dovecot-xaps-daemon/logger"
-	"dovecot-xaps-daemon/database"
-	"dovecot-xaps-daemon/socket"
 )
 
 const Version = "1.1"
@@ -54,7 +54,7 @@ func main() {
 		log.Fatal("Cannot open databasefile: ", *databasefile)
 	}
 	topic := aps.NewApns(*certificate, *key, *checkDelayedInterval, *delayMessageTime)
-	
+
 	log.Printf("Starting xapsd %s on %s", Version, *socketpath)
 	socket.NewSocket(*socketpath, db, topic)
 }

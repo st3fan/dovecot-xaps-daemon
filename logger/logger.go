@@ -5,7 +5,6 @@ import (
 	"os"
 )
 
-
 func init() {
 	// optional use the json formatter
 	log.SetFormatter(&log.TextFormatter{})
@@ -38,4 +37,3 @@ func ParseLoglevel(argument string) {
 		// we do nit need to set the loglevel here since warn is set in init()
 	}
 }
-
