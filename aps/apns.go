@@ -2,7 +2,7 @@ package aps
 
 import (
 	"crypto/x509"
-	"dovecot-xaps-daemon/database"
+	"github.com/st3fan/dovecot-xaps-daemon/database"
 	"encoding/pem"
 	"errors"
 	log "github.com/sirupsen/logrus"

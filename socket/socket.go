@@ -2,8 +2,8 @@ package socket
 
 import (
 	"bufio"
-	"dovecot-xaps-daemon/aps"
-	"dovecot-xaps-daemon/database"
+	"github.com/st3fan/dovecot-xaps-daemon/aps"
+	"github.com/st3fan/dovecot-xaps-daemon/database"
 	"errors"
 	log "github.com/sirupsen/logrus"
 	"net"
