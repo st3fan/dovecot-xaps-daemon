@@ -8,14 +8,20 @@ import (
 	"io/ioutil"
 	"github.com/timehop/apns"
 	"time"
+	"dovecot-xaps-daemon/database"
+	"sync"
 )
 
 
 var client apns.Client
+var mapMutex = &sync.Mutex{}
+var delayedApns = make(map[database.Registration]time.Time)
+var delayTime = 30
 
-func NewApns(certFile string, keyFile string) string {
+func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMessageTime int) string {
 	log.Debugln("Parsing", certFile, "to obtain APNS Topic")
-
+	log.Debugln("APNS for non NewMessage events will be delayed for", time.Second * time.Duration(delayTime))
+	delayTime = delayMessageTime
 	certtopic, err := topicFromCertificate(certFile)
 	if err != nil {
 		log.Fatalln("Could not parse apns topic from certificate: ", err)
@@ -34,16 +40,49 @@ func NewApns(certFile string, keyFile string) string {
 			log.Println("Notification", f.Notif.ID, "failed with", f.Err.Error())
 		}
 	}()
-
+	ticker := time.NewTicker(time.Second * time.Duration(checkDelayedInterval))
+	go func() {
+		for range ticker.C {
+			checkDelayed()
+		}
+	}()
+	
 	return certtopic
 }
 
-func SendNotification(accountId string, deviceToken string) {
+func checkDelayed() {
+	log.Debugln("Checking all delayed APNS")
+	var sendNow[]database.Registration
+	mapMutex.Lock()
+	for reg, t := range delayedApns {
+		log.Debugln("Registration", reg.AccountId, "/", reg.DeviceToken, "has been waiting for", time.Since(t))
+		if time.Since(t) > time.Second * time.Duration(delayTime) {
+			sendNow = append(sendNow, reg)
+			delete(delayedApns, reg)
+		}
+	}
+	mapMutex.Unlock()
+	for _, reg := range sendNow {
+		SendNotification(reg, false)
+	}
+}
+
+func SendNotification(registration database.Registration, delayed bool) {
+	mapMutex.Lock()
+	if delayed {
+		delayedApns[registration] = time.Now()
+		mapMutex.Unlock()
+		return
+	} else {
+		delete(delayedApns, registration)
+	}
+	mapMutex.Unlock()
+	log.Debugln("Sending notification to", registration.AccountId, "/", registration.DeviceToken)
 	payload := apns.NewPayload()
-	payload.APS.AccountId = accountId
+	payload.APS.AccountId = registration.AccountId
 	notification := apns.NewNotification()
 	notification.Payload = payload
-	notification.DeviceToken = deviceToken
+	notification.DeviceToken = registration.DeviceToken
 	// set expiration
 	// https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/CommunicatingwithAPNs.html
 	t := time.Now().Add(24 * time.Hour)

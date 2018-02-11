@@ -9,7 +9,9 @@ ExecStart=/usr/bin/xapsd -key=/etc/xapsd/${KEY_FILE} \
                          -certificate=/etc/xapsd/${CERT_FILE} \
                          -database=/var/lib/xapsd/xapsd.json \
                          -socket=/var/run/dovecot/xapsd.sock \
-                         -loglevel=${LOGLEVEL}
+                         -loglevel=${LOGLEVEL} \
+                         -delayCheckInterval=${CHECKINTERVAL} \
+                         -delayTime=${DELAY}
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure

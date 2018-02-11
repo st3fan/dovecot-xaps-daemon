@@ -144,7 +144,6 @@ func handleRequest(conn net.Conn, db *database.Database, topic string) {
 // the certificate issued by OS X Server for email push
 // notifications.
 //
-
 func handleRegister(conn net.Conn, cmd command, db *database.Database, topic string) {
 	// Make sure the subtopic is ok
 	subtopic, ok := cmd.getStringArg("aps-subtopic")
@@ -193,7 +192,6 @@ func handleRegister(conn net.Conn, cmd command, db *database.Database, topic str
 //
 //  { "aps": { "account-id": aps-account-id } }
 //
-
 func handleNotify(conn net.Conn, cmd command, db *database.Database) {
 	// Make sure we got the required arguments
 	username, ok := cmd.getStringArg("dovecot-username")
@@ -206,6 +204,29 @@ func handleNotify(conn net.Conn, cmd command, db *database.Database) {
 		writeError(conn, "Missing dovecot-mailbox argument")
 	}
 
+	isMessageNew := false
+	events, ok := cmd.getListArg("events")
+	if !ok {
+		log.Warnln("No events found in NOTIFY message, please update the xaps-dovecot-plugin!")
+		isMessageNew = true
+	}
+
+	// check if this is an event for a new message
+	// for all possible events have a look at dovecot-core:
+	// grep '#define EVENT_NAME' src/plugins/push-notification/push-notification-event*
+	for _, e := range events {
+		if e == "MessageNew" {
+			isMessageNew = true
+		}
+	}
+
+	// we don't know how to handle other mboxes other than INBOX, so ignore them
+	if mailbox != "INBOX" {
+		log.Debugln("Ignoring non INBOX event for:", mailbox)
+		writeSuccess(conn, "")
+		return
+	}
+
 	// Find all the devices registered for this mailbox event
 	registrations, err := db.FindRegistrations(username, mailbox)
 	if err != nil {
@@ -215,8 +236,7 @@ func handleNotify(conn net.Conn, cmd command, db *database.Database) {
 	// Send a notification to all registered devices. We ignore failures
 	// because there is not a lot we can do.
 	for _, registration := range registrations {
-		log.Debugln("Sending notification to", registration.AccountId, "/", registration.DeviceToken)
-		aps.SendNotification(registration.AccountId, registration.DeviceToken)
+		aps.SendNotification(registration, !isMessageNew)
 	}
 	writeSuccess(conn, "")
 }
