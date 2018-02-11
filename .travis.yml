@@ -2,4 +2,4 @@ language: go
 
 install:
 
-script: go test -v ./
+script: go test -v ./...

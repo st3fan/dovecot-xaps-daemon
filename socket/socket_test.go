@@ -23,7 +23,7 @@
 // THE SOFTWARE.
 //
 
-package main
+package socket
 
 import (
 	"testing"

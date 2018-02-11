@@ -23,7 +23,7 @@
 // THE SOFTWARE.
 //
 
-package main
+package database
 
 import (
 	"encoding/json"
@@ -64,7 +64,7 @@ type Database struct {
 	Users    map[string]User
 }
 
-func newDatabase(filename string) (*Database, error) {
+func NewDatabase(filename string) (*Database, error) {
 	// TODO This is not awesome.
 	// Let's rewrite. Like replace this with Open(..., "rw") instead of ReadFile()
 	_, err := os.Stat(filename)
@@ -82,7 +82,7 @@ func newDatabase(filename string) (*Database, error) {
 			return nil, err
 		}
 
-		var db Database = Database{filename: filename, Users: make(map[string]User)}
+		db := Database{filename: filename, Users: make(map[string]User)}
 		if len(data) != 0 {
 			if err := json.Unmarshal(data, &db); err != nil {
 				return nil, err
@@ -102,7 +102,7 @@ func (db *Database) write() error {
 	return ioutil.WriteFile(db.filename, data, 0644)
 }
 
-func (db *Database) addRegistration(username, accountId, deviceToken string, mailboxes []string) error {
+func (db *Database) AddRegistration(username, accountId, deviceToken string, mailboxes []string) error {
 	//  mutual write access to database issue #16 xaps-plugin
 	dbMutex.Lock()
 
@@ -126,7 +126,7 @@ func (db *Database) addRegistration(username, accountId, deviceToken string, mai
 	return err
 }
 
-func (db *Database) findRegistrations(username, mailbox string) ([]Registration, error) {
+func (db *Database) FindRegistrations(username, mailbox string) ([]Registration, error) {
 	var registrations []Registration
 	if user, ok := db.Users[username]; ok {
 		for accountId, account := range user.Accounts {
