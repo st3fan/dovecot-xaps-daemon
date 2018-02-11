@@ -1,17 +1,16 @@
 package aps
 
 import (
-	log "github.com/sirupsen/logrus"
-	"encoding/pem"
 	"crypto/x509"
-	"errors"
-	"io/ioutil"
-	"github.com/timehop/apns"
-	"time"
 	"dovecot-xaps-daemon/database"
+	"encoding/pem"
+	"errors"
+	log "github.com/sirupsen/logrus"
+	"github.com/timehop/apns"
+	"io/ioutil"
 	"sync"
+	"time"
 )
-
 
 var client apns.Client
 var mapMutex = &sync.Mutex{}
@@ -20,7 +19,7 @@ var delayTime = 30
 
 func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMessageTime int) string {
 	log.Debugln("Parsing", certFile, "to obtain APNS Topic")
-	log.Debugln("APNS for non NewMessage events will be delayed for", time.Second * time.Duration(delayTime))
+	log.Debugln("APNS for non NewMessage events will be delayed for", time.Second*time.Duration(delayTime))
 	delayTime = delayMessageTime
 	certtopic, err := topicFromCertificate(certFile)
 	if err != nil {
@@ -46,17 +45,17 @@ func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMes
 			checkDelayed()
 		}
 	}()
-	
+
 	return certtopic
 }
 
 func checkDelayed() {
 	log.Debugln("Checking all delayed APNS")
-	var sendNow[]database.Registration
+	var sendNow []database.Registration
 	mapMutex.Lock()
 	for reg, t := range delayedApns {
 		log.Debugln("Registration", reg.AccountId, "/", reg.DeviceToken, "has been waiting for", time.Since(t))
-		if time.Since(t) > time.Second * time.Duration(delayTime) {
+		if time.Since(t) > time.Second*time.Duration(delayTime) {
 			sendNow = append(sendNow, reg)
 			delete(delayedApns, reg)
 		}

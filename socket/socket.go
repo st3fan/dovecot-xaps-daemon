@@ -3,12 +3,12 @@ package socket
 import (
 	"bufio"
 	"dovecot-xaps-daemon/aps"
-	"strings"
-	log "github.com/sirupsen/logrus"
-	"errors"
 	"dovecot-xaps-daemon/database"
+	"errors"
+	log "github.com/sirupsen/logrus"
 	"net"
 	"os"
+	"strings"
 )
 
 type command struct {
@@ -64,7 +64,7 @@ func parseListValue(value string) ([]string, error) {
 }
 
 func parseStringValue(value string) (string, error) {
-	return value[1: len(value)-1], nil // TODO Escaping!
+	return value[1 : len(value)-1], nil // TODO Escaping!
 }
 
 func parseCommand(line string) (command, error) {
