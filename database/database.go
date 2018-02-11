@@ -23,7 +23,7 @@
 // THE SOFTWARE.
 //
 
-package main
+package database
 
 import (
 	"encoding/json"
@@ -40,7 +40,6 @@ type Registration struct {
 }
 
 type Account struct {
-	//AccountId     string
 	DeviceToken string
 	Mailboxes   []string
 }
@@ -55,7 +54,6 @@ func (account *Account) ContainsMailbox(mailbox string) bool {
 }
 
 type User struct {
-	//Username string
 	Accounts map[string]Account
 }
 
@@ -64,33 +62,31 @@ type Database struct {
 	Users    map[string]User
 }
 
-func newDatabase(filename string) (*Database, error) {
-	// TODO This is not awesome.
-	// Let's rewrite. Like replace this with Open(..., "rw") instead of ReadFile()
+func NewDatabase(filename string) (*Database, error) {
+	// check if file exists
 	_, err := os.Stat(filename)
-	if os.IsNotExist(err) {
+	if err != nil && os.IsNotExist(err) {
 		db := &Database{filename: filename, Users: make(map[string]User)}
-		if err := db.write(); err != nil {
-			return nil, err
-		}
-		return db, nil
-	} else if err != nil {
-		return nil, err
-	} else {
-		data, err := ioutil.ReadFile(filename)
+		err := db.write()
 		if err != nil {
 			return nil, err
 		}
-
-		var db Database = Database{filename: filename, Users: make(map[string]User)}
-		if len(data) != 0 {
-			if err := json.Unmarshal(data, &db); err != nil {
-				return nil, err
-			}
-		}
-
-		return &db, nil
+		return db, nil
 	}
+
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	db := Database{filename: filename, Users: make(map[string]User)}
+	if len(data) != 0 {
+		err := json.Unmarshal(data, &db)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &db, nil
 }
 
 func (db *Database) write() error {
@@ -102,7 +98,7 @@ func (db *Database) write() error {
 	return ioutil.WriteFile(db.filename, data, 0644)
 }
 
-func (db *Database) addRegistration(username, accountId, deviceToken string, mailboxes []string) error {
+func (db *Database) AddRegistration(username, accountId, deviceToken string, mailboxes []string) error {
 	//  mutual write access to database issue #16 xaps-plugin
 	dbMutex.Lock()
 
@@ -126,7 +122,7 @@ func (db *Database) addRegistration(username, accountId, deviceToken string, mai
 	return err
 }
 
-func (db *Database) findRegistrations(username, mailbox string) ([]Registration, error) {
+func (db *Database) FindRegistrations(username, mailbox string) ([]Registration, error) {
 	var registrations []Registration
 	if user, ok := db.Users[username]; ok {
 		for accountId, account := range user.Accounts {

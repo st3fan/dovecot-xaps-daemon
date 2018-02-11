@@ -23,7 +23,7 @@
 // THE SOFTWARE.
 //
 
-package main
+package database
 
 import (
 	"io/ioutil"
@@ -32,7 +32,7 @@ import (
 )
 
 func Test_newDatabase(t *testing.T) {
-	db, err := newDatabase("testdata/database.json")
+	db, err := NewDatabase("testdata/database.json")
 	if err != nil {
 		t.Error("Cannot open database testdata/database.json", err)
 	}
@@ -62,26 +62,26 @@ func Test_addRegistration(t *testing.T) {
 	defer os.Remove(f.Name())
 
 	if true {
-		db, err := newDatabase(f.Name())
+		db, err := NewDatabase(f.Name())
 		if err != nil {
 			t.Error("Cannot open database", err)
 		}
 
-		if err := db.addRegistration("test@example.com", "testaccountid1", "testtoken1", []string{"Inbox", "Spam"}); err != nil {
+		if err := db.AddRegistration("test@example.com", "testaccountid1", "testtoken1", []string{"Inbox", "Spam"}); err != nil {
 			t.Error("Cannot addRegistration:", err)
 		}
 
-		if err := db.addRegistration("test@example.com", "testaccountid2", "testtoken2", []string{"Inbox", "Ham"}); err != nil {
+		if err := db.AddRegistration("test@example.com", "testaccountid2", "testtoken2", []string{"Inbox", "Ham"}); err != nil {
 			t.Error("Cannot addRegistration:", err)
 		}
 
-		if err := db.addRegistration("alice@example.com", "aliceaccountid", "alicetoken", []string{"Inbox", "Important"}); err != nil {
+		if err := db.AddRegistration("alice@example.com", "aliceaccountid", "alicetoken", []string{"Inbox", "Important"}); err != nil {
 			t.Error("Cannot addRegistration:", err)
 		}
 	}
 
 	if true {
-		db, err := newDatabase(f.Name())
+		db, err := NewDatabase(f.Name())
 		if err != nil {
 			t.Error("Cannot open database", err)
 		}
@@ -97,13 +97,13 @@ func Test_addRegistration(t *testing.T) {
 }
 
 func Test_findRegistrations(t *testing.T) {
-	db, err := newDatabase("testdata/database.json")
+	db, err := NewDatabase("testdata/database.json")
 	if err != nil {
 		t.Error("Cannot open database testdata/database.json", err)
 	}
 
 	if true {
-		registrations, err := db.findRegistrations("stefan", "Inbox")
+		registrations, err := db.FindRegistrations("stefan", "Inbox")
 		if err != nil {
 			t.Error("Cannot findRegistrations:", err)
 		}
@@ -114,7 +114,7 @@ func Test_findRegistrations(t *testing.T) {
 	}
 
 	if true {
-		registrations, err := db.findRegistrations("stefan", "Ham")
+		registrations, err := db.FindRegistrations("stefan", "Ham")
 		if err != nil {
 			t.Error("Cannot findRegistrations:", err)
 		}
@@ -125,7 +125,7 @@ func Test_findRegistrations(t *testing.T) {
 	}
 
 	if true {
-		registrations, err := db.findRegistrations("doesnotexist", "Inbox")
+		registrations, err := db.FindRegistrations("doesnotexist", "Inbox")
 		if err != nil {
 			t.Error("Cannot findRegistrations:", err)
 		}
