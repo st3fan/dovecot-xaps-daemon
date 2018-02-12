@@ -148,7 +148,7 @@ func handleRegister(conn net.Conn, cmd command, db *database.Database, topic str
 	// Make sure the subtopic is ok
 	subtopic, ok := cmd.getStringArg("aps-subtopic")
 	if !ok {
-		writeError(conn, "Missing apis-subtopic argument")
+		writeError(conn, "Missing aps-subtopic argument")
 	}
 	if subtopic != "com.apple.mobilemail" {
 		writeError(conn, "Unknown aps-subtopic")
