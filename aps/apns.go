@@ -117,7 +117,7 @@ func topicFromCertificate(filename string) (string, error) {
 	}
 
 	if !cert.Extensions[7].Id.Equal(productionOID) {
-		return "", errors.New("Did not find an Extensions[7] with type 1.2.840.113635.100.6.3.2 " +
+		return "", errors.New("Did not find an Extensions[7] with Id 1.2.840.113635.100.6.3.2 " +
 			"which would label this certificate for production use")
 	}
 
