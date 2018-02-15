@@ -12,6 +12,10 @@ import (
 	"time"
 )
 
+
+var oidUid = []int{0, 9, 2342, 19200300, 100, 1, 1}
+var productionOID = []int{1,2,840,113635,100,6,3,2}
+
 var client apns.Client
 var mapMutex = &sync.Mutex{}
 var delayedApns = make(map[database.Registration]time.Time)
@@ -108,9 +112,13 @@ func topicFromCertificate(filename string) (string, error) {
 		return "", errors.New("Subject.Names is empty")
 	}
 
-	oidUid := []int{0, 9, 2342, 19200300, 100, 1, 1}
 	if !cert.Subject.Names[0].Type.Equal(oidUid) {
 		return "", errors.New("Did not find a Subject.Names[0] with type 0.9.2342.19200300.100.1.1")
+	}
+
+	if !cert.Extensions[7].Id.Equal(productionOID) {
+		return "", errors.New("Did not find an Extensions[7] with type 1.2.840.113635.100.6.3.2 " +
+			"which would label this certificate for production use")
 	}
 
 	return cert.Subject.Names[0].Value.(string), nil
