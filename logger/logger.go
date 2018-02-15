@@ -18,22 +18,25 @@ func init() {
 func ParseLoglevel(argument string) {
 	switch argument {
 	case "debug":
+		log.Warn("Logging set to debug")
 		log.SetLevel(log.DebugLevel)
-		log.Info("Logging set to debug")
 	case "error":
+		log.Warn("Logging set to error")
 		log.SetLevel(log.ErrorLevel)
-		log.Info("Logging set to error")
 	case "fatal":
+		log.Warn("Logging set to fatal")
 		log.SetLevel(log.FatalLevel)
-		log.Info("Logging set to fatal")
 	case "info":
+		log.Warn("Logging set to info")
 		log.SetLevel(log.InfoLevel)
-		log.Info("Logging set to info")
 	case "panic":
+		log.Warn("Logging set to panic")
 		log.SetLevel(log.PanicLevel)
-		log.Info("Logging set to panic")
+	case "warn":
+		log.Warn("Logging set to warn")
+		log.SetLevel(log.WarnLevel)
 	default:
-		log.Warn("The provided LogLevel is not of type debug, error, fatal, info or panic - setting to warn instead")
+		log.Warn("The provided LogLevel is not of type debug, error, fatal, info, warn or panic - setting to warn instead")
 		// we do nit need to set the loglevel here since warn is set in init()
 	}
 }
