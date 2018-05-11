@@ -113,11 +113,11 @@ func topicFromCertificate(filename string) (string, error) {
 	}
 
 	if !cert.Subject.Names[0].Type.Equal(oidUid) {
-		return "", errors.New("Did not find a Subject.Names[0] with type 0.9.2342.19200300.100.1.1")
+		return "", errors.New("did not find a Subject.Names[0] with type 0.9.2342.19200300.100.1.1")
 	}
 
 	if !cert.Extensions[7].Id.Equal(productionOID) {
-		return "", errors.New("Did not find an Extensions[7] with Id 1.2.840.113635.100.6.3.2 " +
+		return "", errors.New("did not find an Extensions[7] with Id 1.2.840.113635.100.6.3.2 " +
 			"which would label this certificate for production use")
 	}
 
