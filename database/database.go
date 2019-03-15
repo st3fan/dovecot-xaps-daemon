@@ -30,6 +30,7 @@ import (
 	"io/ioutil"
 	"os"
 	"sync"
+	"time"
 )
 
 var dbMutex = &sync.Mutex{}
@@ -40,8 +41,9 @@ type Registration struct {
 }
 
 type Account struct {
-	DeviceToken string
-	Mailboxes   []string
+	DeviceToken      string
+	Mailboxes        []string
+	RegistrationTime time.Time
 }
 
 func (account *Account) ContainsMailbox(mailbox string) bool {
@@ -113,13 +115,36 @@ func (db *Database) AddRegistration(username, accountId, deviceToken string, mai
 	}
 
 	// Set or update the Registration
-	db.Users[username].Accounts[accountId] = Account{DeviceToken: deviceToken, Mailboxes: mailboxes}
+	db.Users[username].Accounts[accountId] =
+		Account{
+			DeviceToken:      deviceToken,
+			Mailboxes:        mailboxes,
+			RegistrationTime: time.Now(),
+		}
 
 	err := db.write()
 
 	// release mutex
 	dbMutex.Unlock()
 	return err
+}
+
+func (db *Database) DeleteIfExistRegistration(deviceToken string, deletedTimestamp time.Time) bool {
+	for _, user := range db.Users {
+		for accountId, account := range user.Accounts {
+			if account.DeviceToken == deviceToken {
+				if !account.RegistrationTime.IsZero() && account.RegistrationTime.Before(deletedTimestamp) {
+					dbMutex.Lock()
+					delete(user.Accounts, accountId)
+					dbMutex.Unlock()
+					return true
+				} else {
+					return false
+				}
+			}
+		}
+	}
+	return false
 }
 
 func (db *Database) FindRegistrations(username, mailbox string) ([]Registration, error) {

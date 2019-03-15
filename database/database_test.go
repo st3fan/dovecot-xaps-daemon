@@ -29,9 +29,10 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
+	"time"
 )
 
-func Test_newDatabase(t *testing.T) {
+func TestDatabase_NewDatabase(t *testing.T) {
 	db, err := NewDatabase("testdata/database.json")
 	if err != nil {
 		t.Error("Cannot open database testdata/database.json", err)
@@ -54,89 +55,79 @@ func Test_newDatabase(t *testing.T) {
 	}
 }
 
-func Test_addRegistration(t *testing.T) {
+func TestDatabase_AddRegistration(t *testing.T) {
 	f, err := ioutil.TempFile("/tmp", "database_test_Test_addRegistration")
 	if err != nil {
 		t.Error("Can't create temporary file", err)
 	}
 	defer os.Remove(f.Name())
 
-	if true {
-		db, err := NewDatabase(f.Name())
-		if err != nil {
-			t.Error("Cannot open database", err)
-		}
-
-		if err := db.AddRegistration("test@example.com", "testaccountid1", "testtoken1", []string{"Inbox", "Spam"}); err != nil {
-			t.Error("Cannot addRegistration:", err)
-		}
-
-		if err := db.AddRegistration("test@example.com", "testaccountid2", "testtoken2", []string{"Inbox", "Ham"}); err != nil {
-			t.Error("Cannot addRegistration:", err)
-		}
-
-		if err := db.AddRegistration("alice@example.com", "aliceaccountid", "alicetoken", []string{"Inbox", "Important"}); err != nil {
-			t.Error("Cannot addRegistration:", err)
-		}
+	db, err := NewDatabase(f.Name())
+	if err != nil {
+		t.Error("Cannot open database", err)
 	}
 
-	if true {
-		db, err := NewDatabase(f.Name())
-		if err != nil {
-			t.Error("Cannot open database", err)
-		}
+	if err := db.AddRegistration("test@example.com", "testaccountid1", "testtoken1", []string{"Inbox", "Spam"}); err != nil {
+		t.Error("Cannot addRegistration:", err)
+	}
 
-		if _, ok := db.Users["test@example.com"]; !ok {
-			t.Error(`Cannot find Users["test@example.com"]`)
-		}
+	if err := db.AddRegistration("test@example.com", "testaccountid2", "testtoken2", []string{"Inbox", "Ham"}); err != nil {
+		t.Error("Cannot addRegistration:", err)
+	}
 
-		if _, ok := db.Users["alice@example.com"]; !ok {
-			t.Error(`Cannot find Users["test@example.com"]`)
-		}
+	if err := db.AddRegistration("alice@example.com", "aliceaccountid", "alicetoken", []string{"Inbox", "Important"}); err != nil {
+		t.Error("Cannot addRegistration:", err)
+	}
+
+	db, err = NewDatabase(f.Name())
+	if err != nil {
+		t.Error("Cannot open database", err)
+	}
+
+	if _, ok := db.Users["test@example.com"]; !ok {
+		t.Error(`Cannot find Users["test@example.com"]`)
+	}
+
+	if _, ok := db.Users["alice@example.com"]; !ok {
+		t.Error(`Cannot find Users["test@example.com"]`)
 	}
 }
 
-func Test_findRegistrations(t *testing.T) {
+func TestDatabase_FindRegistrations(t *testing.T) {
 	db, err := NewDatabase("testdata/database.json")
 	if err != nil {
 		t.Error("Cannot open database testdata/database.json", err)
 	}
 
-	if true {
-		registrations, err := db.FindRegistrations("stefan", "Inbox")
-		if err != nil {
-			t.Error("Cannot findRegistrations:", err)
-		}
-
-		if len(registrations) != 2 {
-			t.Error(`len(registrations) != 2`)
-		}
+	registrations, err := db.FindRegistrations("stefan", "Inbox")
+	if err != nil {
+		t.Error("Cannot findRegistrations:", err)
 	}
 
-	if true {
-		registrations, err := db.FindRegistrations("stefan", "Ham")
-		if err != nil {
-			t.Error("Cannot findRegistrations:", err)
-		}
-
-		if len(registrations) != 1 {
-			t.Error(`len(registrations) != 1`)
-		}
+	if len(registrations) != 2 {
+		t.Error(`len(registrations) != 2`)
 	}
 
-	if true {
-		registrations, err := db.FindRegistrations("doesnotexist", "Inbox")
-		if err != nil {
-			t.Error("Cannot findRegistrations:", err)
-		}
+	registrations, err = db.FindRegistrations("stefan", "Ham")
+	if err != nil {
+		t.Error("Cannot findRegistrations:", err)
+	}
 
-		if len(registrations) != 0 {
-			t.Error(`len(registrations) != 0`)
-		}
+	if len(registrations) != 1 {
+		t.Error(`len(registrations) != 1`)
+	}
+
+	registrations, err = db.FindRegistrations("doesnotexist", "Inbox")
+	if err != nil {
+		t.Error("Cannot findRegistrations:", err)
+	}
+
+	if len(registrations) != 0 {
+		t.Error(`len(registrations) != 0`)
 	}
 }
 
-func Test_Account_ContainsMailbox(t *testing.T) {
+func TestDatabase_AccountContainsMailbox(t *testing.T) {
 	account := Account{DeviceToken: "SomeToken", Mailboxes: []string{"Inbox", "Ham"}}
 
 	if account.ContainsMailbox("Inbox") != true {
@@ -149,5 +140,22 @@ func Test_Account_ContainsMailbox(t *testing.T) {
 
 	if account.ContainsMailbox("Cheese") != false {
 		t.Error(`account.ContainsMailbox("Cheese") != false`)
+	}
+}
+
+func TestDatabase_DeleteIfExistRegistration(t *testing.T) {
+	db, err := NewDatabase("testdata/database.json")
+	if err != nil {
+		t.Error("Cannot open database testdata/database.json", err)
+	}
+
+	success := db.DeleteIfExistRegistration("alicedevicetoken1", time.Now())
+	if !success {
+		t.Error("Device token could not be removed", err)
+	}
+
+	success = db.DeleteIfExistRegistration("alicedevicetoken1", time.Now())
+	if success {
+		t.Error("Not existend device token has been *successfully* deleted???", err)
 	}
 }

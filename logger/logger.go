@@ -37,6 +37,6 @@ func ParseLoglevel(argument string) {
 		log.SetLevel(log.WarnLevel)
 	default:
 		log.Warn("The provided LogLevel is not of type debug, error, fatal, info, warn or panic - setting to warn instead")
-		// we do nit need to set the loglevel here since warn is set in init()
+		// we do not need to set the loglevel here since warn is set in init()
 	}
 }

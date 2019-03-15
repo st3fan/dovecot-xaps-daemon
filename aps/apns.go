@@ -2,29 +2,30 @@ package aps
 
 import (
 	"crypto/x509"
-	"github.com/st3fan/dovecot-xaps-daemon/database"
 	"encoding/pem"
 	"errors"
 	log "github.com/sirupsen/logrus"
+	"github.com/st3fan/dovecot-xaps-daemon/database"
 	"github.com/timehop/apns"
 	"io/ioutil"
 	"sync"
 	"time"
 )
 
-
 var oidUid = []int{0, 9, 2342, 19200300, 100, 1, 1}
-var productionOID = []int{1,2,840,113635,100,6,3,2}
+var productionOID = []int{1, 2, 840, 113635, 100, 6, 3, 2}
 
 var client apns.Client
+var db *database.Database
 var mapMutex = &sync.Mutex{}
 var delayedApns = make(map[database.Registration]time.Time)
 var delayTime = 30
 
-func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMessageTime int) string {
+func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMessageTime int, feedbackInterval int, database *database.Database) string {
 	log.Debugln("Parsing", certFile, "to obtain APNS Topic")
 	log.Debugln("APNS for non NewMessage events will be delayed for", time.Second*time.Duration(delayTime))
 	delayTime = delayMessageTime
+	db = database
 	certtopic, err := topicFromCertificate(certFile)
 	if err != nil {
 		log.Fatalln("Could not parse apns topic from certificate: ", err)
@@ -32,20 +33,36 @@ func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMes
 	log.Debugln("Topic is", certtopic)
 	log.Debugln("Creating APNS client to", apns.ProductionGateway)
 
-	c, err := apns.NewClientWithFiles(apns.ProductionGateway, certFile, keyFile)
+	client, err = apns.NewClientWithFiles(apns.ProductionGateway, certFile, keyFile)
 	if err != nil {
 		log.Fatal("Could not create client: ", err.Error())
 	}
-	client = c
+
+	// https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/BinaryProviderAPI.html
+	feedback, err := apns.NewFeedbackWithFiles(apns.ProductionFeedbackGateway, certFile, keyFile)
+	if err != nil {
+		log.Fatal("Could not create feedback service: ", err.Error())
+	}
+	if feedbackInterval > 0 {
+		feedbackTicker := time.NewTicker(time.Minute * time.Duration(feedbackInterval))
+		go func() {
+			for range feedbackTicker.C {
+				for f := range feedback.Receive() {
+					db.DeleteIfExistRegistration(f.DeviceToken, f.Timestamp)
+				}
+			}
+		}()
+	}
 
 	go func() {
-		for f := range c.FailedNotifs {
+		for f := range client.FailedNotifs {
 			log.Println("Notification", f.Notif.ID, "failed with", f.Err.Error())
 		}
 	}()
-	ticker := time.NewTicker(time.Second * time.Duration(checkDelayedInterval))
+
+	delayedNotificationTicker := time.NewTicker(time.Second * time.Duration(checkDelayedInterval))
 	go func() {
-		for range ticker.C {
+		for range delayedNotificationTicker.C {
 			checkDelayed()
 		}
 	}()
@@ -113,11 +130,11 @@ func topicFromCertificate(filename string) (string, error) {
 	}
 
 	if !cert.Subject.Names[0].Type.Equal(oidUid) {
-		return "", errors.New("Did not find a Subject.Names[0] with type 0.9.2342.19200300.100.1.1")
+		return "", errors.New("did not find a Subject.Names[0] with type 0.9.2342.19200300.100.1.1")
 	}
 
 	if !cert.Extensions[7].Id.Equal(productionOID) {
-		return "", errors.New("Did not find an Extensions[7] with type 1.2.840.113635.100.6.3.2 " +
+		return "", errors.New("did not find an Extensions[7] with Id 1.2.840.113635.100.6.3.2 " +
 			"which would label this certificate for production use")
 	}
 
