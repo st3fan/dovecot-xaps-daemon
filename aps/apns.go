@@ -4,6 +4,7 @@ import (
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
+	"github.com/go-redis/redis"
 	log "github.com/sirupsen/logrus"
 	"github.com/st3fan/dovecot-xaps-daemon/database"
 	"github.com/timehop/apns"
@@ -12,30 +13,51 @@ import (
 	"time"
 )
 
+const timeLayout = time.RFC3339
+
 var oidUid = []int{0, 9, 2342, 19200300, 100, 1, 1}
 var productionOID = []int{1, 2, 840, 113635, 100, 6, 3, 2}
 
 var client apns.Client
 var db *database.Database
+var redisClient *redis.Client
 var mapMutex = &sync.Mutex{}
 var delayedApns = make(map[database.Registration]time.Time)
 var delayTime = 30
 
-func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMessageTime int, feedbackInterval int, database *database.Database) string {
-	log.Debugln("Parsing", certFile, "to obtain APNS Topic")
+func NewApns(
+	certFile string,
+	keyFile string,
+	checkDelayedInterval int,
+	delayMessageTime int,
+	feedbackInterval int,
+	database *database.Database,
+	redisEnabled bool,
+	redisURL string,
+	redisPassword string,
+	redisDb int) string {
 	log.Debugln("APNS for non NewMessage events will be delayed for", time.Second*time.Duration(delayTime))
 	delayTime = delayMessageTime
 	db = database
+	log.Debugln("Parsing", certFile, "to obtain APNS Topic")
 	certtopic, err := topicFromCertificate(certFile)
 	if err != nil {
 		log.Fatalln("Could not parse apns topic from certificate: ", err)
 	}
 	log.Debugln("Topic is", certtopic)
-	log.Debugln("Creating APNS client to", apns.ProductionGateway)
 
+	log.Debugln("Creating APNS client to", apns.ProductionGateway)
 	client, err = apns.NewClientWithFiles(apns.ProductionGateway, certFile, keyFile)
 	if err != nil {
 		log.Fatal("Could not create client: ", err.Error())
+	}
+
+	if redisEnabled {
+		redisClient = redis.NewClient(&redis.Options{
+			Addr:     redisURL,
+			Password: redisPassword, // no password set
+			DB:       redisDb,       // use default DB
+		})
 	}
 
 	// https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/BinaryProviderAPI.html
@@ -48,7 +70,25 @@ func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMes
 		go func() {
 			for range feedbackTicker.C {
 				for f := range feedback.Receive() {
-					db.DeleteIfExistRegistration(f.DeviceToken, f.Timestamp)
+					if !db.DeleteIfExistRegistration(f.DeviceToken, f.Timestamp) &&
+						redisEnabled {
+						redisClient.HSet("xapsd", f.DeviceToken, f.Timestamp.Format(timeLayout))
+					}
+				}
+				if redisEnabled {
+					list, err := redisClient.HGetAll("xapsd").Result()
+					if err != nil {
+						log.Errorln(err)
+					}
+					for key, value := range list {
+						t, err := time.Parse(timeLayout, value)
+						if err != nil {
+							log.Errorln(err)
+						}
+						if db.DeleteIfExistRegistration(key, t) {
+							redisClient.HDel("xapsd", key)
+						}
+					}
 				}
 			}
 		}()

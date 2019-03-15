@@ -12,7 +12,11 @@ ExecStart=/usr/bin/xapsd -key=/etc/xapsd/${KEY_FILE} \
                          -loglevel=${LOGLEVEL} \
                          -delayCheckInterval=${CHECKINTERVAL} \
                          -delayTime=${DELAY} \ 
-                         -feedbackInterval=${FEEDBACK_INTERVAL}
+                         -feedbackInterval=${FEEDBACK_INTERVAL} \
+                         -redisEnabled=${REDIS_ENABLED} \
+                         -redisUrl=${REDIS_URL} \
+                         -redisPassword=${REDIS_PASSWORD} \
+                         -redisDb=${REDIS_DB}
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure

@@ -44,6 +44,11 @@ var apnsFeedbackTime = flag.Int("feedbackInterval", 0, "interval in minutes afte
 var databasefile = flag.String("database", "/var/lib/xapsd/databasefile.json", "path to the databasefile file")
 var key = flag.String("key", "/etc/xapsd/key.pem", "path to the pem file containing the private key")
 var certificate = flag.String("certificate", "/etc/xapsd/certificate.pem", "path to the pem file containing the certificate")
+var redisEnabled = flag.Bool("redisEnabled", false, "Enable Redis to synchronize APNS Feedback Service")
+var redisUrl = flag.String("redisUrl", "localhost:6379", "redis URL")
+var redisPassword = flag.String("redisPassword", "", "redis Password")
+var redisDb = flag.Int("redisDb", 0, "redis Database")
+
 
 func main() {
 	flag.Parse()
@@ -54,7 +59,7 @@ func main() {
 	if err != nil {
 		log.Fatal("Cannot open databasefile: ", *databasefile)
 	}
-	topic := aps.NewApns(*certificate, *key, *checkDelayedInterval, *delayMessageTime, *apnsFeedbackTime, db)
+	topic := aps.NewApns(*certificate, *key, *checkDelayedInterval, *delayMessageTime, *apnsFeedbackTime, db, *redisEnabled, *redisUrl, *redisPassword, *redisDb)
 
 	log.Printf("Starting xapsd %s on %s", Version, *socketpath)
 	socket.NewSocket(*socketpath, db, topic)
