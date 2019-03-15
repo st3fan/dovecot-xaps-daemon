@@ -11,7 +11,8 @@ ExecStart=/usr/bin/xapsd -key=/etc/xapsd/${KEY_FILE} \
                          -socket=/var/run/dovecot/xapsd.sock \
                          -loglevel=${LOGLEVEL} \
                          -delayCheckInterval=${CHECKINTERVAL} \
-                         -delayTime=${DELAY}
+                         -delayTime=${DELAY} \ 
+                         -feedbackInterval=${FEEDBACK_INTERVAL}
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure
