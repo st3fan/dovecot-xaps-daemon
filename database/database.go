@@ -89,9 +89,9 @@ func NewDatabase(filename string) (*Database, error) {
 		}
 	}
 
-	delayedNotificationTicker := time.NewTicker(time.Hour * 8)
+	registrationCleanupTicker := time.NewTicker(time.Hour * 8)
 	go func() {
-		for range delayedNotificationTicker.C {
+		for range registrationCleanupTicker.C {
 			db.cleanupRegistered()
 		}
 	}()
