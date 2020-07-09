@@ -27,6 +27,7 @@ package database
 
 import (
 	"encoding/json"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
 	"sync"
@@ -88,6 +89,13 @@ func NewDatabase(filename string) (*Database, error) {
 		}
 	}
 
+	delayedNotificationTicker := time.NewTicker(time.Hour * 8)
+	go func() {
+		for range delayedNotificationTicker.C {
+			db.cleanupRegistered()
+		}
+	}()
+
 	return &db, nil
 }
 
@@ -135,7 +143,9 @@ func (db *Database) DeleteIfExistRegistration(deviceToken string, deletedTimesta
 			if account.DeviceToken == deviceToken {
 				if !account.RegistrationTime.IsZero() && account.RegistrationTime.Before(deletedTimestamp) {
 					dbMutex.Lock()
+					log.Infoln("Deleting " + account.DeviceToken)
 					delete(user.Accounts, accountId)
+					db.write()
 					dbMutex.Unlock()
 					return true
 				} else {
@@ -158,4 +168,13 @@ func (db *Database) FindRegistrations(username, mailbox string) ([]Registration,
 		}
 	}
 	return registrations, nil
+}
+
+func (db *Database) cleanupRegistered() {
+	log.Debugln("Check Database for devices not calling IMAP hook for more than 30d")
+	for _, user := range db.Users {
+		for _, account := range user.Accounts {
+			db.DeleteIfExistRegistration(account.DeviceToken, time.Now().Add(-time.Hour*24*30))
+		}
+	}
 }
