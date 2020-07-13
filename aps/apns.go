@@ -86,7 +86,10 @@ func SendNotification(registration database.Registration, delayed bool) {
 	notification := &apns2.Notification{}
 	notification.DeviceToken = registration.DeviceToken
 	notification.Topic = topic
-	notification.Payload = []byte(`{"aps":{"account-id":"` + registration.AccountId + `"}}`) // See Payload section below
+	composedPayload := []byte(`{"aps":{`)
+	composedPayload = append(composedPayload, []byte(`"account-id":"` + registration.AccountId + `"`)...)
+	composedPayload = append(composedPayload, []byte(`"}}`)...)
+	notification.Payload = composedPayload
 	notification.ApnsID = "40636A2C-C093-493E-936A-2A4333C06DEA"
 	notification.Expiration = time.Now().Add(24 * time.Hour)
 	// set the apns-priority
