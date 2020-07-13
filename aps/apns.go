@@ -84,7 +84,7 @@ func SendNotification(registration database.Registration, delayed bool) {
 	notification.Topic = topic
 	composedPayload := []byte(`{"aps":{`)
 	composedPayload = append(composedPayload, []byte(`"account-id":"` + registration.AccountId + `"`)...)
-	composedPayload = append(composedPayload, []byte(`"}}`)...)
+	composedPayload = append(composedPayload, []byte(`}}`)...)
 	notification.Payload = composedPayload
 	notification.ApnsID = "40636A2C-C093-493E-936A-2A4333C06DEA"
 	notification.Expiration = time.Now().Add(24 * time.Hour)
