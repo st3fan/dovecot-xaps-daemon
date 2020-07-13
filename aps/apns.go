@@ -1,14 +1,14 @@
 package aps
 
 import (
+	"crypto/tls"
 	"crypto/x509"
-	"encoding/pem"
 	"errors"
+	"github.com/freswa/dovecot-xaps-daemon/database"
 	"github.com/go-redis/redis"
+	"github.com/sideshow/apns2"
 	log "github.com/sirupsen/logrus"
-	"github.com/st3fan/dovecot-xaps-daemon/database"
-	"github.com/timehop/apns"
-	"io/ioutil"
+	"net/http"
 	"sync"
 	"time"
 )
@@ -18,87 +18,31 @@ const timeLayout = time.RFC3339
 var oidUid = []int{0, 9, 2342, 19200300, 100, 1, 1}
 var productionOID = []int{1, 2, 840, 113635, 100, 6, 3, 2}
 
-var client apns.Client
+var client *apns2.Client
+var topic string
 var db *database.Database
 var redisClient *redis.Client
 var mapMutex = &sync.Mutex{}
 var delayedApns = make(map[database.Registration]time.Time)
 var delayTime = 30
 
-func NewApns(
-	certFile string,
-	keyFile string,
-	checkDelayedInterval int,
-	delayMessageTime int,
-	feedbackInterval int,
-	database *database.Database,
-	redisEnabled bool,
-	redisURL string,
-	redisPassword string,
-	redisDb int) string {
+func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMessageTime int, database *database.Database) string {
 	log.Debugln("APNS for non NewMessage events will be delayed for", time.Second*time.Duration(delayTime))
 	delayTime = delayMessageTime
 	db = database
 	log.Debugln("Parsing", certFile, "to obtain APNS Topic")
-	certtopic, err := topicFromCertificate(certFile)
+	cert, err := tls.LoadX509KeyPair(certFile, keyFile)
+	if err != nil {
+		log.Fatalln("Could not parse certificate: ", err)
+	}
+	topic, err = topicFromCertificate(cert)
 	if err != nil {
 		log.Fatalln("Could not parse apns topic from certificate: ", err)
 	}
-	log.Debugln("Topic is", certtopic)
+	log.Debugln("Topic is", topic)
 
-	log.Debugln("Creating APNS client to", apns.ProductionGateway)
-	client, err = apns.NewClientWithFiles(apns.ProductionGateway, certFile, keyFile)
-	if err != nil {
-		log.Fatal("Could not create client: ", err.Error())
-	}
-
-	if redisEnabled {
-		redisClient = redis.NewClient(&redis.Options{
-			Addr:     redisURL,
-			Password: redisPassword, // no password set
-			DB:       redisDb,       // use default DB
-		})
-	}
-
-	// https://developer.apple.com/library/archive/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/BinaryProviderAPI.html
-	feedback, err := apns.NewFeedbackWithFiles(apns.ProductionFeedbackGateway, certFile, keyFile)
-	if err != nil {
-		log.Fatal("Could not create feedback service: ", err.Error())
-	}
-	if feedbackInterval > 0 {
-		feedbackTicker := time.NewTicker(time.Minute * time.Duration(feedbackInterval))
-		go func() {
-			for range feedbackTicker.C {
-				for f := range feedback.Receive() {
-					if !db.DeleteIfExistRegistration(f.DeviceToken, f.Timestamp) &&
-						redisEnabled {
-						redisClient.HSet("xapsd", f.DeviceToken, f.Timestamp.Format(timeLayout))
-					}
-				}
-				if redisEnabled {
-					list, err := redisClient.HGetAll("xapsd").Result()
-					if err != nil {
-						log.Errorln(err)
-					}
-					for key, value := range list {
-						t, err := time.Parse(timeLayout, value)
-						if err != nil {
-							log.Errorln(err)
-						}
-						if db.DeleteIfExistRegistration(key, t) {
-							redisClient.HDel("xapsd", key)
-						}
-					}
-				}
-			}
-		}()
-	}
-
-	go func() {
-		for f := range client.FailedNotifs {
-			log.Println("Notification", f.Notif.ID, "failed with", f.Err.Error())
-		}
-	}()
+	log.Debugln("Creating APNS client")
+	client = apns2.NewClient(cert).Production()
 
 	delayedNotificationTicker := time.NewTicker(time.Second * time.Duration(checkDelayedInterval))
 	go func() {
@@ -107,7 +51,7 @@ func NewApns(
 		}
 	}()
 
-	return certtopic
+	return topic
 }
 
 func checkDelayed() {
@@ -138,29 +82,40 @@ func SendNotification(registration database.Registration, delayed bool) {
 	}
 	mapMutex.Unlock()
 	log.Debugln("Sending notification to", registration.AccountId, "/", registration.DeviceToken)
-	payload := apns.NewPayload()
-	payload.APS.AccountId = registration.AccountId
-	notification := apns.NewNotification()
-	notification.Payload = payload
+
+	notification := &apns2.Notification{}
 	notification.DeviceToken = registration.DeviceToken
-	// set expiration
-	// https://developer.apple.com/library/content/documentation/NetworkingInternet/Conceptual/RemoteNotificationsPG/CommunicatingwithAPNs.html
-	t := time.Now().Add(24 * time.Hour)
-	notification.Expiration = &t
-	client.Send(notification)
+	notification.Topic = topic
+	notification.Payload = []byte(`{"aps":{"account-id":"` + registration.AccountId + `"}}`) // See Payload section below
+	notification.ApnsID = "40636A2C-C093-493E-936A-2A4333C06DEA"
+	notification.Expiration = time.Now().Add(24 * time.Hour)
+	// set the apns-priority
+	//notification.Priority = apns2.PriorityLow
+
+	res, err := client.Push(notification)
+
+	if err != nil {
+		log.Fatal("Error:", err)
+	}
+
+	switch res.StatusCode {
+	case http.StatusOK:
+		log.Debugln("Apple returned 200 for notification to", registration.AccountId, "/", registration.DeviceToken)
+	case 410:
+		// The device token is inactive for the specified topic.
+		log.Debugln("Apple returned 410 for notification to", registration.AccountId, "/", registration.DeviceToken)
+		db.DeleteIfExistRegistration(registration.DeviceToken)
+	default:
+		log.Errorf("Apple returned a non-200 HTTP status: %v %v %v\n", res.StatusCode, res.ApnsID, res.Reason)
+	}
 }
 
-func topicFromCertificate(filename string) (string, error) {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		log.Fatalln("Could not read file: ", err)
+func topicFromCertificate(tlsCert tls.Certificate) (string, error) {
+	if len(tlsCert.Certificate) > 1 {
+		return "", errors.New("found multiple certificates in the cert file - only one is allowed")
 	}
-	block, _ := pem.Decode([]byte(data))
-	if block == nil {
-		return "", errors.New("Could not decode PEM block from certificate")
-	}
-
-	cert, err := x509.ParseCertificate(block.Bytes)
+	
+	cert, err := x509.ParseCertificate(tlsCert.Certificate[0])
 	if err != nil {
 		log.Fatalln("Could not parse certificate: ", err)
 	}

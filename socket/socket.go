@@ -3,9 +3,9 @@ package socket
 import (
 	"bufio"
 	"errors"
+	"github.com/freswa/dovecot-xaps-daemon/aps"
+	"github.com/freswa/dovecot-xaps-daemon/database"
 	log "github.com/sirupsen/logrus"
-	"github.com/st3fan/dovecot-xaps-daemon/aps"
-	"github.com/st3fan/dovecot-xaps-daemon/database"
 	"net"
 	"os"
 	"strings"
