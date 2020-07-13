@@ -5,7 +5,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"github.com/freswa/dovecot-xaps-daemon/database"
-	"github.com/go-redis/redis"
 	"github.com/sideshow/apns2"
 	log "github.com/sirupsen/logrus"
 	"net/http"
@@ -13,15 +12,12 @@ import (
 	"time"
 )
 
-const timeLayout = time.RFC3339
-
 var oidUid = []int{0, 9, 2342, 19200300, 100, 1, 1}
 var productionOID = []int{1, 2, 840, 113635, 100, 6, 3, 2}
 
 var client *apns2.Client
 var topic string
 var db *database.Database
-var redisClient *redis.Client
 var mapMutex = &sync.Mutex{}
 var delayedApns = make(map[database.Registration]time.Time)
 var delayTime = 30
