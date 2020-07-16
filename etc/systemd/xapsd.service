@@ -11,12 +11,7 @@ ExecStart=/usr/bin/xapsd -key=/etc/xapsd/${KEY_FILE} \
                          -socket=/var/run/dovecot/xapsd.sock \
                          -loglevel=${LOGLEVEL} \
                          -delayCheckInterval=${CHECKINTERVAL} \
-                         -delayTime=${DELAY} \
-                         -feedbackInterval=${FEEDBACK_INTERVAL} \
-                         -redisEnabled=${REDIS_ENABLED} \
-                         -redisUrl=${REDIS_URL} \
-                         -redisPassword=${REDIS_PASSWORD} \
-                         -redisDb=${REDIS_DB}
+                         -delayTime=${DELAY}
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=on-failure
