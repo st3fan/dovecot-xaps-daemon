@@ -22,11 +22,8 @@ type (
 
 func ParseConfig(configName, configPath string) {
 	viper.SetConfigType("yaml")
-	if len(configName) > 0 {
-		viper.SetConfigName(configName)
-	} else {
-		viper.SetConfigName("xapsd")
-	}
+	viper.SetConfigName("xapsd")
+	viper.SetConfigName(configName)
 	viper.AddConfigPath("/etc/xapsd/")
 	viper.AddConfigPath(configPath)
 	
@@ -38,6 +35,7 @@ func ParseConfig(configName, configPath string) {
 	if err != nil {
 		log.Fatal(err)
 	}
+	conf.loaded = true
 }
 
 func GetOptions() Config {
