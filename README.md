@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/st3fan/dovecot-xaps-daemon.svg)](https://travis-ci.org/st3fan/dovecot-xaps-daemon)
+[![Build Status](https://travis-ci.org/freswa/dovecot-xaps-daemon.svg)](https://travis-ci.org/freswa/dovecot-xaps-daemon)
 
 iOS Push Email for Dovecot
 ==========================
@@ -94,19 +94,10 @@ go build -o xapsd
 Running the Daemon
 ------------------
 
-Because this code is work in progress, it currently is not packaged properly as a good behaving background process. I recommend following the instructions below in a `screen` or `tmux` session so that it is easy to keep the daemon running. The next release will have better support for running this as a background service.
-
-You can run the daemon as follows:
-
-```
-bin/xapsd -key=$HOME/key.pem -certificate=$HOME/certificate.pem \
--database=$HOME/xapsd.json -socket=/var/run/xapsd/xapsd.sock \
--delayCheckInterval=20 -delayTime=30
-```
-
-This assumes that you have the exported `certificate.pem` and `key.pem` files in your home directory. The database file will be created by the daemon. It will contain the mappings between the IMAP users, their mail accounts and the iOS devices. It is a simple JSON file so you can look at it manually by opening it in a text editor.
-
-The daemon is verbose and should print out a bunch of informational messages. If you see errors, please [file a bug](https://github.com/st3fan/dovecot-xaps-daemon/issues/new).
+We assume that the daemon is installed in `/usr/bin/xapsd`.
+The config file from `etc/xapsd/xapsd.yaml` has to go in `/etc/xapsd`.
+Use the systemd file from `etc/systemd/xapsd.service` to run the daemon.
+Change config to fit your needs.
 
 
 Setting up Devices
@@ -119,7 +110,7 @@ If you go to your Email settings, you should see that the account has switched t
 Privacy
 -------
 
-Each time a message is received, dovecot-xaps-daemon sends Apple a TLS-secured HTTP request, which Apple uses to send a notification over a persistent connection maintained to between the user's device and Apple's push notification servers.
+Each time a message is received, dovecot-xaps-daemon sends Apple a TLS-secured HTTP/2 request, which Apple uses to send a notification over a persistent connection maintained to between the user's device and Apple's push notification servers.
 
 The request contains the following information: a device token (used by Apple to identify which device should be sent a push notification), an account ID (used by the user's device to identify which account it should poll for new messages), and a certificate topic. The certificate topic identifies the server to Apple and is hardcoded in the certificate issued by Apple and setup in the configuration for dovecot-xaps-daemon.
 
