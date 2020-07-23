@@ -5,7 +5,7 @@ import (
 )
 
 func TestConfig_GetOptions(t *testing.T) {
-	ParseConfig("testconf.yaml", "./config/")
+	ParseConfig("testconf", "./")
 	options := GetOptions()
 	if options.LogLevel != "info" {
 		t.Error("Config not loaded")

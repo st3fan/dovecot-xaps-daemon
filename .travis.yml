@@ -1,5 +1,8 @@
 language: go
 
-install:
-
-script: go test -v ./...
+jobs:
+  include:
+    - stage: test
+      script: go test -v ./...
+    - stage: build
+      script: go build .
