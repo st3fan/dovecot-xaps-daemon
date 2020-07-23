@@ -28,6 +28,7 @@ package main
 import (
 	"flag"
 	"github.com/freswa/dovecot-xaps-daemon/aps"
+	"github.com/freswa/dovecot-xaps-daemon/config"
 	"github.com/freswa/dovecot-xaps-daemon/database"
 	"github.com/freswa/dovecot-xaps-daemon/logger"
 	"github.com/freswa/dovecot-xaps-daemon/socket"
@@ -36,27 +37,23 @@ import (
 
 const Version = "1.1"
 
-var logLevel = flag.String("loglevel", "warn", "Loglevel: debug, error, fatal, info, panic")
-var socketpath = flag.String("socket", "/var/run/xapsd/xapsd.sock", "path to the socketpath for Dovecot")
-var checkDelayedInterval = flag.Int("delayCheckInterval", 20, "interval to check for delayed push notifications to send")
-var delayMessageTime = flag.Int("delayTime", 30, "seconds to wait until a notification for a non NewMessage event gets sent")
-var databasefile = flag.String("database", "/var/lib/xapsd/databasefile.json", "path to the databasefile file")
-var key = flag.String("key", "/etc/xapsd/key.pem", "path to the pem file containing the private key")
-var certificate = flag.String("certificate", "/etc/xapsd/certificate.pem", "path to the pem file containing the certificate")
-
+var configPath = flag.String("configName", "", `Add an additional path to lookup the config file in`)
+var configName = flag.String("configPath", "", `Set a different configName (without extension) than the default "xapsd"`)
 
 
 func main() {
+	config.ParseConfig(*configName, *configPath)
+	config := config.GetOptions()
 	flag.Parse()
-	logger.ParseLoglevel(*logLevel)
+	logger.ParseLoglevel(config.LogLevel)
 
-	log.Debugln("Opening databasefile at", *databasefile)
-	db, err := database.NewDatabase(*databasefile)
+	log.Debugln("Opening databasefile at", config.DatabaseFile)
+	db, err := database.NewDatabase(config.DatabaseFile)
 	if err != nil {
-		log.Fatal("Cannot open databasefile: ", *databasefile)
+		log.Fatal("Cannot open databasefile: ", config.DatabaseFile)
 	}
-	topic := aps.NewApns(*certificate, *key, *checkDelayedInterval, *delayMessageTime, db)
+	topic := aps.NewApns(config.CertFile, config.KeyFile, config.CheckInterval, config.Delay, db)
 
-	log.Printf("Starting xapsd %s on %s", Version, *socketpath)
-	socket.NewSocket(*socketpath, db, topic)
+	log.Printf("Starting to listen on %s", config.SocketPath)
+	socket.NewSocket(config.SocketPath, db, topic)
 }

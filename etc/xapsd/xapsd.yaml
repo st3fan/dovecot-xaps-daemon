@@ -1,0 +1,31 @@
+# set the loglevel to either
+# debug, error, fatal, info, panic or warn
+# Default: warn
+loglevel: warn
+
+# xapsd creates a json file to store the registration persistent on disk.
+# This sets the location of the file.
+databaseFile: /var/lib/xapsd/database.json
+
+# xapsd uses a socket to allow dovecot to connect. This sets the location of the socket.
+socketPath: /var/run/dovecot/xapsd.sock
+
+# Notifications that are not initiated by new messages are not sent immediately for two reasons:
+# 1. When you move/copy/delete messages you most likely move/copy/delete more messages within a short period of time.
+# 2. You don't need your mailboxes to synchronize immediately since they are automatically synchronized when opening
+#    the app
+# If a new message comes and the move/copy/delete notification is still on hold it will be sent with the notification
+# for the new message.
+# This sets the interval to check for delayed messages.
+checkInterval: 20
+
+# Set the time how long notifications for not-new messages should be delayed until they are sent.
+# Whenever checkInterval runs, it checks if "delay" <= "waiting time" and sends the notification if the expression is
+# true.
+delay: 30
+
+# key file imported from macOS
+keyFile: /etc/xapsd/key.pem
+
+# certificate imported from macOS
+certFile: /etc/xapsd/certificate.pem

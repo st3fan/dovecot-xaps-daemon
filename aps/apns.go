@@ -20,9 +20,9 @@ var topic string
 var db *database.Database
 var mapMutex = &sync.Mutex{}
 var delayedApns = make(map[database.Registration]time.Time)
-var delayTime = 30
+var delayTime uint = 30
 
-func NewApns(certFile string, keyFile string, checkDelayedInterval int, delayMessageTime int, database *database.Database) string {
+func NewApns(certFile string, keyFile string, checkDelayedInterval uint, delayMessageTime uint, database *database.Database) string {
 	log.Debugln("APNS for non NewMessage events will be delayed for", time.Second*time.Duration(delayTime))
 	delayTime = delayMessageTime
 	db = database

@@ -29,7 +29,6 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"time"
 )
 
 func TestDatabase_NewDatabase(t *testing.T) {
@@ -149,12 +148,12 @@ func TestDatabase_DeleteIfExistRegistration(t *testing.T) {
 		t.Error("Cannot open database testdata/database.json", err)
 	}
 
-	success := db.DeleteIfExistRegistration("alicedevicetoken1", time.Now())
+	success := db.DeleteIfExistRegistration("alicedevicetoken1")
 	if !success {
 		t.Error("Device token could not be removed", err)
 	}
 
-	success = db.DeleteIfExistRegistration("alicedevicetoken1", time.Now())
+	success = db.DeleteIfExistRegistration("alicedevicetoken1")
 	if success {
 		t.Error("Not existend device token has been *successfully* deleted???", err)
 	}
