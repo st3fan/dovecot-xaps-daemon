@@ -233,6 +233,13 @@ func handleNotify(conn net.Conn, cmd command, db *database.Database) {
 		writeError(conn, "Cannot lookup registrations: "+err.Error())
 	}
 
+	for _, r := range registrations {
+		log.Debugf("Found registration %s with token %s for username: $s", r.AccountId, r.DeviceToken, username)
+	}
+	if len(registrations) == 0 {
+		log.Debugf("No registration found for username: $s", username)
+	}
+
 	// Send a notification to all registered devices. We ignore failures
 	// because there is not a lot we can do.
 	for _, registration := range registrations {
