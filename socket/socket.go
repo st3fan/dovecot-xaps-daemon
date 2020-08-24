@@ -234,10 +234,10 @@ func handleNotify(conn net.Conn, cmd command, db *database.Database) {
 	}
 
 	for _, r := range registrations {
-		log.Debugf("Found registration %s with token %s for username: $s", r.AccountId, r.DeviceToken, username)
+		log.Debugf("Found registration %s with token %s for username: %s", r.AccountId, r.DeviceToken, username)
 	}
 	if len(registrations) == 0 {
-		log.Debugf("No registration found for username: $s", username)
+		log.Debugf("No registration found for username: %s", username)
 	}
 
 	// Send a notification to all registered devices. We ignore failures
