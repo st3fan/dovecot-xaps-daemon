@@ -11,6 +11,7 @@ import (
 	"io/ioutil"
 	"sync"
 	"time"
+	"context"
 )
 
 const timeLayout = time.RFC3339
@@ -21,6 +22,7 @@ var productionOID = []int{1, 2, 840, 113635, 100, 6, 3, 2}
 var client apns.Client
 var db *database.Database
 var redisClient *redis.Client
+var ctx = context.Background()
 var mapMutex = &sync.Mutex{}
 var delayedApns = make(map[database.Registration]time.Time)
 var delayTime = 30
@@ -72,11 +74,11 @@ func NewApns(
 				for f := range feedback.Receive() {
 					if !db.DeleteIfExistRegistration(f.DeviceToken, f.Timestamp) &&
 						redisEnabled {
-						redisClient.HSet("xapsd", f.DeviceToken, f.Timestamp.Format(timeLayout))
+						redisClient.HSet(ctxt, "xapsd", f.DeviceToken, f.Timestamp.Format(timeLayout))
 					}
 				}
 				if redisEnabled {
-					list, err := redisClient.HGetAll("xapsd").Result()
+					list, err := redisClient.HGetAll(ctxt, "xapsd").Result()
 					if err != nil {
 						log.Errorln(err)
 					}
@@ -86,7 +88,7 @@ func NewApns(
 							log.Errorln(err)
 						}
 						if db.DeleteIfExistRegistration(key, t) {
-							redisClient.HDel("xapsd", key)
+							redisClient.HDel(ctxt, "xapsd", key)
 						}
 					}
 				}
