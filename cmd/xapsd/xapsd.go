@@ -27,11 +27,9 @@ package main
 
 import (
 	"flag"
-	"github.com/freswa/dovecot-xaps-daemon/aps"
-	"github.com/freswa/dovecot-xaps-daemon/config"
-	"github.com/freswa/dovecot-xaps-daemon/database"
-	"github.com/freswa/dovecot-xaps-daemon/logger"
-	"github.com/freswa/dovecot-xaps-daemon/socket"
+	"github.com/freswa/dovecot-xaps-daemon/internal"
+	"github.com/freswa/dovecot-xaps-daemon/internal/config"
+	"github.com/freswa/dovecot-xaps-daemon/internal/database"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -45,15 +43,16 @@ func main() {
 	config.ParseConfig(*configName, *configPath)
 	config := config.GetOptions()
 	flag.Parse()
-	logger.ParseLoglevel(config.LogLevel)
+	internal.ParseLoglevel(config.LogLevel)
 
 	log.Debugln("Opening databasefile at", config.DatabaseFile)
 	db, err := database.NewDatabase(config.DatabaseFile)
 	if err != nil {
 		log.Fatal("Cannot open databasefile: ", config.DatabaseFile)
 	}
-	topic := aps.NewApns(config.CertFile, config.KeyFile, config.CheckInterval, config.Delay, db)
+
+	apns := internal.NewApns(&config, db)
 
 	log.Printf("Starting to listen on %s", config.SocketPath)
-	socket.NewSocket(config.SocketPath, db, topic)
+	internal.NewSocket(&config, db, apns)
 }

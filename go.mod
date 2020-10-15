@@ -1,6 +1,6 @@
 module github.com/freswa/dovecot-xaps-daemon
 
-go 1.12
+go 1.15
 
 require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect

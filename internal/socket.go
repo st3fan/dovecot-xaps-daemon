@@ -1,10 +1,10 @@
-package socket
+package internal
 
 import (
 	"bufio"
 	"errors"
-	"github.com/freswa/dovecot-xaps-daemon/aps"
-	"github.com/freswa/dovecot-xaps-daemon/database"
+	"github.com/freswa/dovecot-xaps-daemon/internal/config"
+	"github.com/freswa/dovecot-xaps-daemon/internal/database"
 	log "github.com/sirupsen/logrus"
 	"net"
 	"os"
@@ -16,24 +16,24 @@ type command struct {
 	args map[string]interface{}
 }
 
-func NewSocket(socketpath string, db *database.Database, topic string) {
+func NewSocket(config *config.Config, db *database.Database, apns *Apns) {
 	// Delete the socketpath if it already exists
-	if _, err := os.Stat(socketpath); err == nil {
-		err := os.Remove(socketpath)
+	if _, err := os.Stat(config.SocketPath); err == nil {
+		err := os.Remove(config.SocketPath)
 		if err != nil {
-			log.Fatalln("Could not delete existing socketpath: ", socketpath, err)
+			log.Fatalln("Could not delete existing socketpath: ", config.SocketPath, err)
 		}
 	}
-	log.Debugln("Listening on UNIX socketpath at", socketpath)
+	log.Debugln("Listening on UNIX socketpath at", config.SocketPath)
 
-	listener, err := net.Listen("unix", socketpath)
+	listener, err := net.Listen("unix", config.SocketPath)
 	if err != nil {
 		log.Fatalln("Could not create socketpath: ", err)
 	}
-	defer os.Remove(socketpath)
+	defer os.Remove(config.SocketPath)
 
 	// TODO What is the proper way to limit Dovecot to this socketpath
-	err = os.Chmod(socketpath, 0777)
+	err = os.Chmod(config.SocketPath, 0777)
 	if err != nil {
 		log.Fatalln("Could not chmod socketpath: ", err)
 	}
@@ -46,7 +46,7 @@ func NewSocket(socketpath string, db *database.Database, topic string) {
 		}
 
 		log.Debugln("Accepted a connection")
-		go handleRequest(conn, db, topic)
+		go handleRequest(conn, db, apns)
 	}
 }
 
@@ -104,7 +104,7 @@ func parseCommand(line string) (command, error) {
 	return cmd, nil
 }
 
-func handleRequest(conn net.Conn, db *database.Database, topic string) {
+func handleRequest(conn net.Conn, db *database.Database, apns *Apns) {
 	defer conn.Close()
 
 	scanner := bufio.NewScanner(conn)
@@ -118,9 +118,9 @@ func handleRequest(conn net.Conn, db *database.Database, topic string) {
 
 		switch command.name {
 		case "REGISTER":
-			handleRegister(conn, command, db, topic)
+			handleRegister(conn, command, db, apns)
 		case "NOTIFY":
-			handleNotify(conn, command, db)
+			handleNotify(conn, command, db, apns)
 		default:
 			writeError(conn, "Unknown command")
 		}
@@ -144,7 +144,7 @@ func handleRequest(conn net.Conn, db *database.Database, topic string) {
 // the certificate issued by OS X Server for email push
 // notifications.
 //
-func handleRegister(conn net.Conn, cmd command, db *database.Database, topic string) {
+func handleRegister(conn net.Conn, cmd command, db *database.Database, apns *Apns) {
 	// Make sure the subtopic is ok
 	subtopic, ok := cmd.getStringArg("aps-subtopic")
 	if !ok {
@@ -176,7 +176,7 @@ func handleRegister(conn net.Conn, cmd command, db *database.Database, topic str
 	if !ok {
 		writeError(conn, "Failed to register client: "+err.Error())
 	}
-	writeSuccess(conn, topic)
+	writeSuccess(conn, apns.Topic)
 }
 
 //
@@ -192,7 +192,7 @@ func handleRegister(conn net.Conn, cmd command, db *database.Database, topic str
 //
 //  { "aps": { "account-id": aps-account-id } }
 //
-func handleNotify(conn net.Conn, cmd command, db *database.Database) {
+func handleNotify(conn net.Conn, cmd command, db *database.Database, apns *Apns) {
 	// Make sure we got the required arguments
 	username, ok := cmd.getStringArg("dovecot-username")
 	if !ok {
@@ -243,7 +243,7 @@ func handleNotify(conn net.Conn, cmd command, db *database.Database) {
 	// Send a notification to all registered devices. We ignore failures
 	// because there is not a lot we can do.
 	for _, registration := range registrations {
-		aps.SendNotification(registration, !isMessageNew)
+		apns.SendNotification(registration, !isMessageNew)
 	}
 	writeSuccess(conn, "")
 }
