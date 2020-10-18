@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/freswa/dovecot-xaps-daemon.svg?branch=master)](https://travis-ci.com/freswa/dovecot-xaps-daemon)
+[![YourActionName Actions Status](https://github.com/freswa/dovecot-xaps-daemon/workflows/Test/badge.svg)](https://github.com/freswa/dovecot-xaps-daemon/actions)
 
 iOS Push Email for Dovecot
 ==========================
