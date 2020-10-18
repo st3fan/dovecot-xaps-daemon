@@ -5,4 +5,4 @@ jobs:
     - stage: test
       script: go test -v ./...
     - stage: build
-      script: go build .
+      script: go build ./cmd/xapsd
