@@ -3,6 +3,7 @@ module github.com/freswa/dovecot-xaps-daemon
 go 1.15
 
 require (
+	github.com/freswa/go-plist v0.0.0-20201008215444-900e8a7d907d
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/sideshow/apns2 v0.20.0
 	github.com/sirupsen/logrus v1.6.0

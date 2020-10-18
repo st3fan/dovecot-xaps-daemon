@@ -3,5 +3,3 @@ databaseFile: /var/lib/xapsd/database.json
 socketPath: /var/run/xapsd/xapsd.sock
 checkInterval: 20
 delay: 30
-keyFile: key.pem
-certFile: certificate.pem

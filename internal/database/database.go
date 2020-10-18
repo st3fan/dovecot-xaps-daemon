@@ -27,6 +27,7 @@ package database
 
 import (
 	"encoding/json"
+	"github.com/freswa/dovecot-xaps-daemon/pkg/apple_xserver_certs"
 	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"os"
@@ -35,7 +36,7 @@ import (
 )
 
 var dbMutex = &sync.Mutex{}
-                                                                 
+
 type Registration struct {
 	DeviceToken string
 	AccountId   string
@@ -63,6 +64,7 @@ type User struct {
 type Database struct {
 	filename string
 	Users    map[string]User
+	Certs    apple_xserver_certs.Certificates
 }
 
 func NewDatabase(filename string) (*Database, error) {
@@ -106,6 +108,26 @@ func (db *Database) write() error {
 	}
 
 	return ioutil.WriteFile(db.filename, data, 0644)
+}
+
+func (db *Database) GetCerts() (certs *apple_xserver_certs.Certificates, success bool) {
+	dbMutex.Lock()
+	success = false
+	if db.Certs.Mail != nil {
+		certsCopy := db.Certs
+		certs = &certsCopy
+		success = true
+	}
+	dbMutex.Unlock()
+	return
+}
+
+func (db *Database) PutCerts(certs apple_xserver_certs.Certificates) (err error) {
+	dbMutex.Lock()
+	db.Certs = certs
+	err = db.write()
+	dbMutex.Unlock()
+	return
 }
 
 func (db *Database) AddRegistration(username, accountId, deviceToken string, mailboxes []string) error {

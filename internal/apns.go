@@ -6,11 +6,10 @@ import (
 	"errors"
 	"github.com/freswa/dovecot-xaps-daemon/internal/config"
 	"github.com/freswa/dovecot-xaps-daemon/internal/database"
+	"github.com/freswa/dovecot-xaps-daemon/pkg/apple_xserver_certs"
 	"github.com/sideshow/apns2"
 	log "github.com/sirupsen/logrus"
-	"io/ioutil"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 )
@@ -39,21 +38,26 @@ func NewApns(config *config.Config, db *database.Database) (apns *Apns) {
 		delayedApns:          make(map[database.Registration]time.Time),
 	}
 	log.Debugln("APNS for non NewMessage events will be delayed for", time.Second*time.Duration(apns.DelayTime))
-	log.Debugln("Parsing", config.CertFile, "to obtain APNS Topic")
-	certData, keyData, filesExist, err := loadCertificate(config)
-	if filesExist && err != nil {
-		log.Fatalln("Could not load certificate: ", err)
+	log.Debugln("Trying to get existing certs from the DB")
+	// try to retrieve certs from the db
+	certs, successful := apns.db.GetCerts()
+	// if we got some certs but they are no longer than 30 days valid
+	if successful && invalidAfterFromCertificate(certs.Mail) < time.Hour*24*30 {
+		apple_xserver_certs.RenewCerts(certs, "configusername", "confighash")
 	}
-	cert, err := tls.X509KeyPair(certData, keyData)
-	if err != nil {
-		log.Fatalln("Could not parse certificate: ", err)
+	if !successful {
+		apple_xserver_certs.NewCerts("configusername", "confighash")
 	}
-	apns.Topic, err = topicFromCertificate(cert)
+	// extract the mail cert and retrieve its topic
+	mailCert := certs.Mail
+	topic, err := topicFromCertificate(*mailCert)
+
 	if err != nil {
 		log.Fatalln("Could not parse apns topic from certificate: ", err)
 	}
+	apns.Topic = topic
 	log.Debugln("Topic is", apns.Topic)
-	apns.client = apns2.NewClient(cert).Production()
+	apns.client = apns2.NewClient(*mailCert).Production()
 	apns.createDelayedNotificationThread()
 	return apns
 }
@@ -152,28 +156,11 @@ func topicFromCertificate(tlsCert tls.Certificate) (string, error) {
 	return cert.Subject.Names[0].Value.(string), nil
 }
 
-func loadCertificate(config *config.Config) (certData, keyData []byte, exists bool, err error) {
-	// we assume the config is wrong
-	exists = false
-	// check if the config sections have been filled
-	if len(config.CertFile) > 0 && len(config.KeyFile) > 0 {
-		// then check if the file exist on disk
-		exists = fileExists(config.CertFile) && fileExists(config.KeyFile)
-	}
-	// read
-	certData, err = ioutil.ReadFile(config.CertFile)
+// returns the duration until the certificate is invalid
+func invalidAfterFromCertificate(certificate *tls.Certificate) time.Duration {
+	cert, err := x509.ParseCertificate(certificate.Certificate[0])
 	if err != nil {
-		return
+		log.Fatalln("Could not parse certificate: ", err)
 	}
-	keyData, err = ioutil.ReadFile(config.KeyFile)
-	return
-}
-
-
-func fileExists(filename string) bool {
-	info, err := os.Stat(filename)
-	if os.IsNotExist(err) {
-		return false
-	}
-	return !info.IsDir()
+	return cert.NotAfter.Sub(time.Now())
 }

@@ -15,8 +15,6 @@ type (
 		SocketPath    string
 		CheckInterval uint
 		Delay         uint
-		KeyFile       string
-		CertFile      string
 	}
 )
 
@@ -26,7 +24,7 @@ func ParseConfig(configName, configPath string) {
 	viper.SetConfigName(configName)
 	viper.AddConfigPath("/etc/xapsd/")
 	viper.AddConfigPath(configPath)
-	
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		log.Fatal(err)

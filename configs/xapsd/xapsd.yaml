@@ -1,5 +1,5 @@
 # set the loglevel to either
-# debug, error, fatal, info, panic or warn
+# trace, debug, error, fatal, info, panic or warn
 # Default: warn
 loglevel: warn
 
@@ -24,12 +24,6 @@ checkInterval: 20
 # true.
 delay: 30
 
-# key file imported from macOS
-keyFile: /etc/xapsd/key.pem
-
-# certificate imported from macOS
-certFile: /etc/xapsd/certificate.pem
-
 # To retrieve certificates from Apple, we need to login with a valid Apple ID
 # The accounts email must be given in cleartext, but the password has to
 # be hashed before sending it. To not leak working credentials on running servers,
@@ -37,5 +31,5 @@ certFile: /etc/xapsd/certificate.pem
 appleId: apple@apple.com
 
 # type your Apple ID password, then Ctrl-D Ctrl-D (DO NOT PRESS ENTER IN THIS PROCESS)
-# openssl dgst -sha256 -binary | xxd -p -c 32 > config/passwdhash
+# openssl dgst -sha256 -binary | xxd -p -c 32
 appleIdHashedPassword: thehash
