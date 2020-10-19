@@ -46,7 +46,7 @@ func NewApns(config *config.Config, db *database.Database) (apns *Apns) {
 		apple_xserver_certs.RenewCerts(certs, config.AppleId, config.AppleIdHashedPassword)
 	}
 	if !successful {
-		apple_xserver_certs.NewCerts(config.AppleId, config.AppleIdHashedPassword)
+		certs = apple_xserver_certs.NewCerts(config.AppleId, config.AppleIdHashedPassword)
 	}
 	// extract the mail cert and retrieve its topic
 	mailCert := certs.Mail
