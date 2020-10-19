@@ -26,6 +26,9 @@
 package database
 
 import (
+	"crypto/rsa"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"github.com/freswa/dovecot-xaps-daemon/pkg/apple_xserver_certs"
 	log "github.com/sirupsen/logrus"
@@ -62,9 +65,14 @@ type User struct {
 }
 
 type Database struct {
-	filename string
-	Users    map[string]User
-	Certs    apple_xserver_certs.Certificates
+	filename   string
+	Users      map[string]User
+	AppleCerts DbCerts
+}
+
+type DbCerts struct {
+	Signature []tls.Certificate
+	Keys      [][]byte
 }
 
 func NewDatabase(filename string) (*Database, error) {
@@ -113,19 +121,86 @@ func (db *Database) write() error {
 func (db *Database) GetCerts() (certs *apple_xserver_certs.Certificates, success bool) {
 	dbMutex.Lock()
 	success = false
-	if db.Certs.Mail != nil {
-		certsCopy := db.Certs
-		certs = &certsCopy
+	if db.AppleCerts.Signature != nil {
+		calendarKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[0])
+		if err != nil {
+			log.Fatal("Error while parsing calendar private key: ")
+		}
+		calendarCert := &db.AppleCerts.Signature[0]
+		calendarCert.PrivateKey = calendarKey
+		contactKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[1])
+		if err != nil {
+			log.Fatal("Error while parsing contact private key: ")
+		}
+		contactCert := &db.AppleCerts.Signature[1]
+		contactCert.PrivateKey = contactKey
+		mailKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[2])
+		if err != nil {
+			log.Fatal("Error while parsing mail private key: ")
+		}
+		mailCert := &db.AppleCerts.Signature[2]
+		mailCert.PrivateKey = mailKey
+		mgmtKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[3])
+		if err != nil {
+			log.Fatal("Error while parsing mgmt private key: ")
+		}
+		mgmtCert := &db.AppleCerts.Signature[3]
+		mgmtCert.PrivateKey = mgmtKey
+		alertsKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[4])
+		if err != nil {
+			log.Fatal("Error while parsing alerts private key: ")
+		}
+		alertsCert := &db.AppleCerts.Signature[4]
+		alertsCert.PrivateKey = alertsKey
+
+		certs = &apple_xserver_certs.Certificates{
+			Calendar: calendarCert,
+			Contact:  contactCert,
+			Mail:     mailCert,
+			Mgmt:     mgmtCert,
+			Alerts:   alertsCert,
+		}
+
 		success = true
 	}
 	dbMutex.Unlock()
 	return
 }
 
-func (db *Database) PutCerts(certs apple_xserver_certs.Certificates) (err error) {
+func (db *Database) PutCerts(certs *apple_xserver_certs.Certificates) {
 	dbMutex.Lock()
-	db.Certs = certs
-	err = db.write()
+
+	db.AppleCerts.Keys = make([][]byte, 5)
+	db.AppleCerts.Signature = make([]tls.Certificate, 5)
+
+	calendarCert := *certs.Calendar
+	contactCert := *certs.Contact
+	mailCert := *certs.Mail
+	mgmtCert := *certs.Mgmt
+	alertsCert := *certs.Alerts
+
+	db.AppleCerts.Keys[0] = x509.MarshalPKCS1PrivateKey(calendarCert.PrivateKey.(*rsa.PrivateKey))
+	db.AppleCerts.Keys[1] = x509.MarshalPKCS1PrivateKey(contactCert.PrivateKey.(*rsa.PrivateKey))
+	db.AppleCerts.Keys[2] = x509.MarshalPKCS1PrivateKey(mailCert.PrivateKey.(*rsa.PrivateKey))
+	db.AppleCerts.Keys[3] = x509.MarshalPKCS1PrivateKey(mgmtCert.PrivateKey.(*rsa.PrivateKey))
+	db.AppleCerts.Keys[4] = x509.MarshalPKCS1PrivateKey(alertsCert.PrivateKey.(*rsa.PrivateKey))
+
+	calendarCert.PrivateKey = nil
+	contactCert.PrivateKey = nil
+	mailCert.PrivateKey = nil
+	mgmtCert.PrivateKey = nil
+	alertsCert.PrivateKey = nil
+
+	db.AppleCerts.Signature[0] = calendarCert
+	db.AppleCerts.Signature[1] = contactCert
+	db.AppleCerts.Signature[2] = mailCert
+	db.AppleCerts.Signature[3] = mgmtCert
+	db.AppleCerts.Signature[4] = alertsCert
+
+	err := db.write()
+	if err != nil {
+		log.Fatalln("Could not write database to disk while trying to save the certificates: ", err)
+	}
 	dbMutex.Unlock()
 	return
 }
