@@ -255,7 +255,7 @@ func certRequestList(certs *Certificates) []aplCSR {
 }
 
 func getCertSerialNumber(cert *tls.Certificate) string {
-	if len(cert.Certificate[0]) == 0 {
+	if len(cert.Certificate) == 0 {
 		return ""
 	}
 	parsedCert, err := x509.ParseCertificate(cert.Certificate[0])
