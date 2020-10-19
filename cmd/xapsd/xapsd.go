@@ -35,13 +35,13 @@ import (
 
 const Version = "1.1"
 
-var configPath = flag.String("configName", "", `Add an additional path to lookup the config file in`)
-var configName = flag.String("configPath", "", `Set a different configName (without extension) than the default "xapsd"`)
+var configPath = flag.String("configPath", "", `Add an additional path to lookup the config file in`)
+var configName = flag.String("configName", "", `Set a different configName (without extension) than the default "xapsd"`)
 
 func main() {
+	flag.Parse()
 	config.ParseConfig(*configName, *configPath)
 	config := config.GetOptions()
-	flag.Parse()
 	lvl, err := log.ParseLevel(config.LogLevel)
 	if err != nil {
 		log.Fatal(err)
