@@ -88,7 +88,7 @@ type (
 	aplReqRequest struct {
 		CertRequestList []aplCSR
 		ProfileType     string
-		RequestType     string
+		RequesterType   string
 		User            aplReqUser
 	}
 
@@ -189,8 +189,8 @@ func createPushCertRequestPlist(certs *Certificates, username string, passwordha
 			Version:                     "1",
 		},
 		Request: aplReqRequest{
-			ProfileType: "Production",
-			RequestType: "XServer",
+			ProfileType:   "Production",
+			RequesterType: "XServer",
 			User: aplReqUser{
 				AccountName:  username,
 				PasswordHash: passwordhash,
