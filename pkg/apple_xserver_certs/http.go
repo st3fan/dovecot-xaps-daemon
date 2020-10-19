@@ -29,15 +29,20 @@ func requestCerts(certs *Certificates, username string, passwordhash string) *Ce
 		log.Fatalf("Error %d while retrieving certificates:\n%+v", responseBody.Response.Status.ErrorCode, responseBody)
 	}
 	calendarCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[0].Certificate))
+	certs.Calendar.Certificate = make([][]byte, 1)
 	certs.Calendar.Certificate[0] = calendarCertDER.Bytes
 	contactCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[1].Certificate))
-	certs.Contact.Certificate[1] = contactCertDER.Bytes
+	certs.Contact.Certificate = make([][]byte, 1)
+	certs.Contact.Certificate[0] = contactCertDER.Bytes
 	mailCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[2].Certificate))
-	certs.Mail.Certificate[2] = mailCertDER.Bytes
+	certs.Mail.Certificate = make([][]byte, 1)
+	certs.Mail.Certificate[0] = mailCertDER.Bytes
 	mgmtCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[3].Certificate))
-	certs.Mgmt.Certificate[3] = mgmtCertDER.Bytes
+	certs.Mgmt.Certificate = make([][]byte, 1)
+	certs.Mgmt.Certificate[0] = mgmtCertDER.Bytes
 	alertsCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[4].Certificate))
-	certs.Alerts.Certificate[4] = alertsCertDER.Bytes
+	certs.Alerts.Certificate = make([][]byte, 1)
+	certs.Alerts.Certificate[0] = alertsCertDER.Bytes
 
 	return certs
 }
