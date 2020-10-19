@@ -9,12 +9,14 @@ var conf Config
 
 type (
 	Config struct {
-		loaded        bool
-		LogLevel      string
-		DatabaseFile  string
-		SocketPath    string
-		CheckInterval uint
-		Delay         uint
+		loaded                bool
+		LogLevel              string
+		DatabaseFile          string
+		SocketPath            string
+		CheckInterval         uint
+		Delay                 uint
+		AppleId               string
+		AppleIdHashedPassword string
 	}
 )
 

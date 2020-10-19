@@ -43,10 +43,10 @@ func NewApns(config *config.Config, db *database.Database) (apns *Apns) {
 	certs, successful := apns.db.GetCerts()
 	// if we got some certs but they are no longer than 30 days valid
 	if successful && invalidAfterFromCertificate(certs.Mail) < time.Hour*24*30 {
-		apple_xserver_certs.RenewCerts(certs, "configusername", "confighash")
+		apple_xserver_certs.RenewCerts(certs, config.AppleId, config.AppleIdHashedPassword)
 	}
 	if !successful {
-		apple_xserver_certs.NewCerts("configusername", "confighash")
+		apple_xserver_certs.NewCerts(config.AppleId, config.AppleIdHashedPassword)
 	}
 	// extract the mail cert and retrieve its topic
 	mailCert := certs.Mail
