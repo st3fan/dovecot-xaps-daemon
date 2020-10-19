@@ -32,11 +32,11 @@ func requestCerts(certs *Certificates, username string, passwordhash string) *Ce
 	certs.Calendar.Certificate[0] = calendarCertDER.Bytes
 	contactCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[1].Certificate))
 	certs.Contact.Certificate[1] = contactCertDER.Bytes
-	mailCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[1].Certificate))
+	mailCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[2].Certificate))
 	certs.Mail.Certificate[2] = mailCertDER.Bytes
-	mgmtCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[1].Certificate))
+	mgmtCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[3].Certificate))
 	certs.Mgmt.Certificate[3] = mgmtCertDER.Bytes
-	alertsCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[1].Certificate))
+	alertsCertDER, _ := pem.Decode([]byte(responseBody.Response.Certificates[4].Certificate))
 	certs.Alerts.Certificate[4] = alertsCertDER.Bytes
 
 	return certs
