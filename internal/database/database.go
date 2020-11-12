@@ -126,39 +126,39 @@ func (db *Database) GetCerts() (certs *apple_xserver_certs.Certificates, success
 		if err != nil {
 			log.Fatal("Error while parsing calendar private key: ")
 		}
-		calendarCert := &db.AppleCerts.Signature[0]
+		calendarCert := db.AppleCerts.Signature[0]
 		calendarCert.PrivateKey = calendarKey
 		contactKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[1])
 		if err != nil {
 			log.Fatal("Error while parsing contact private key: ")
 		}
-		contactCert := &db.AppleCerts.Signature[1]
+		contactCert := db.AppleCerts.Signature[1]
 		contactCert.PrivateKey = contactKey
 		mailKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[2])
 		if err != nil {
 			log.Fatal("Error while parsing mail private key: ")
 		}
-		mailCert := &db.AppleCerts.Signature[2]
+		mailCert := db.AppleCerts.Signature[2]
 		mailCert.PrivateKey = mailKey
 		mgmtKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[3])
 		if err != nil {
 			log.Fatal("Error while parsing mgmt private key: ")
 		}
-		mgmtCert := &db.AppleCerts.Signature[3]
+		mgmtCert := db.AppleCerts.Signature[3]
 		mgmtCert.PrivateKey = mgmtKey
 		alertsKey, err := x509.ParsePKCS1PrivateKey(db.AppleCerts.Keys[4])
 		if err != nil {
 			log.Fatal("Error while parsing alerts private key: ")
 		}
-		alertsCert := &db.AppleCerts.Signature[4]
+		alertsCert := db.AppleCerts.Signature[4]
 		alertsCert.PrivateKey = alertsKey
 
 		certs = &apple_xserver_certs.Certificates{
-			Calendar: calendarCert,
-			Contact:  contactCert,
-			Mail:     mailCert,
-			Mgmt:     mgmtCert,
-			Alerts:   alertsCert,
+			Calendar: &calendarCert,
+			Contact:  &contactCert,
+			Mail:     &mailCert,
+			Mgmt:     &mgmtCert,
+			Alerts:   &alertsCert,
 		}
 
 		success = true
