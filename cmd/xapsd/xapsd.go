@@ -51,7 +51,7 @@ func main() {
 	log.Debugln("Opening databasefile at", config.DatabaseFile)
 	db, err := database.NewDatabase(config.DatabaseFile)
 	if err != nil {
-		log.Fatal("Cannot open databasefile: ", config.DatabaseFile)
+		log.Fatal("Cannot open databasefile: ", err)
 	}
 
 	apns := internal.NewApns(&config, db)
