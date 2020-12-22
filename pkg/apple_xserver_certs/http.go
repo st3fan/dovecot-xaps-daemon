@@ -71,5 +71,8 @@ func sendRequest(reqBody []byte) (respBody []byte) {
 	if err != nil {
 		log.Fatalln(err)
 	}
+	if resp.StatusCode != 200 {
+		log.Fatalf("Apple didn't return 200: %s", respBody)
+	}
 	return
 }
