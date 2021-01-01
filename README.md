@@ -61,7 +61,7 @@ Change config to fit your needs.
 Especially fill in the details of the Apple ID. 
 The parameter `appleId` must be set to the login email address of the account.
 Please do _NOT_ fill in your password into `appleIdHashedPassword`, but instead run
-`openssl dgst -sha256 -binary | xxd -p -c 32`, then type your password and directly after that, press `Ctrl+D Ctrl+D`. Do not press `enter` during this process. Otherwise the generated Hash will not work. Then copy the printed hash to the config file.
+`xapsd -pass`. Then copy the printed hash to the config file.
 
 
 Setting up Devices

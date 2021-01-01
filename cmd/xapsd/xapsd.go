@@ -26,20 +26,30 @@
 package main
 
 import (
+	"bufio"
+	"crypto/sha256"
+	"encoding/hex"
 	"flag"
+	"fmt"
 	"github.com/freswa/dovecot-xaps-daemon/internal"
 	"github.com/freswa/dovecot-xaps-daemon/internal/config"
 	"github.com/freswa/dovecot-xaps-daemon/internal/database"
 	log "github.com/sirupsen/logrus"
+	"os"
+	"strings"
 )
 
 const Version = "1.1"
 
 var configPath = flag.String("configPath", "", `Add an additional path to lookup the config file in`)
 var configName = flag.String("configName", "", `Set a different configName (without extension) than the default "xapsd"`)
+var generatePassword = flag.Bool("pass", false, `Generate a password hash to be used in the xapsd.yaml`)
 
 func main() {
 	flag.Parse()
+	if *generatePassword {
+		hashPassword()
+	}
 	config.ParseConfig(*configName, *configPath)
 	config := config.GetOptions()
 	lvl, err := log.ParseLevel(config.LogLevel)
@@ -58,4 +68,19 @@ func main() {
 
 	log.Printf("Starting to listen on %s", config.SocketPath)
 	internal.NewSocket(&config, db, apns)
+}
+
+// function to generate the password
+func hashPassword() {
+	reader := bufio.NewReader(os.Stdin)
+	fmt.Print("Please enter the password -> ")
+	text, _ := reader.ReadString('\n')
+	// remove newlines
+	text = strings.Replace(text, "\n", "", -1)
+	hash := sha256.New()
+	hash.Write([]byte(text))
+	sha256sum := hex.EncodeToString(hash.Sum(nil))
+	fmt.Printf("This is the hash -> %s\n", sha256sum)
+	fmt.Print("For security reasons, we don't fill in the hash automagically. Please do so yourself.\n")
+	os.Exit(0)
 }
