@@ -30,6 +30,5 @@ delay: 30
 # we do not accept the cleartext password here.
 appleId: apple@apple.com
 
-# type your Apple ID password, then Ctrl-D Ctrl-D (DO NOT PRESS ENTER IN THIS PROCESS)
-# openssl dgst -sha256 -binary | xxd -p -c 32
+# use `xaps -pass` to calculate the hash of the apple id password
 appleIdHashedPassword: thehash
