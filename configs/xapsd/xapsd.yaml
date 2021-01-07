@@ -7,8 +7,8 @@ loglevel: warn
 # This sets the location of the file.
 databaseFile: /var/lib/xapsd/database.json
 
-# xapsd uses a socket to allow dovecot to connect. This sets the location of the socket.
-socketPath: /var/run/dovecot/xapsd.sock
+# xapsd listens ona a socket for http requests from the dovecot plugin. This sets the port number of the socket.
+port: 11619
 
 # Notifications that are not initiated by new messages are not sent immediately for two reasons:
 # 1. When you move/copy/delete messages you most likely move/copy/delete more messages within a short period of time.

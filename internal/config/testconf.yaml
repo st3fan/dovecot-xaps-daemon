@@ -1,5 +1,5 @@
 loglevel: info
 databaseFile: /var/lib/xapsd/database.json
-socketPath: /var/run/xapsd/xapsd.sock
+port: 11619
 checkInterval: 20
 delay: 30

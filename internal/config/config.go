@@ -12,7 +12,7 @@ type (
 		loaded                bool
 		LogLevel              string
 		DatabaseFile          string
-		SocketPath            string
+		Port                  string
 		CheckInterval         uint
 		Delay                 uint
 		AppleId               string

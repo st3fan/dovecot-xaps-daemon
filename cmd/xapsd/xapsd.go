@@ -51,23 +51,21 @@ func main() {
 		hashPassword()
 	}
 	config.ParseConfig(*configName, *configPath)
-	config := config.GetOptions()
-	lvl, err := log.ParseLevel(config.LogLevel)
+	cfg := config.GetOptions()
+	lvl, err := log.ParseLevel(cfg.LogLevel)
 	if err != nil {
 		log.Fatal(err)
 	}
 	log.SetLevel(lvl)
 
-	log.Debugln("Opening databasefile at", config.DatabaseFile)
-	db, err := database.NewDatabase(config.DatabaseFile)
+	log.Debugln("Opening databasefile at", cfg.DatabaseFile)
+	db, err := database.NewDatabase(cfg.DatabaseFile)
 	if err != nil {
 		log.Fatal("Cannot open databasefile: ", err)
 	}
 
-	apns := internal.NewApns(&config, db)
-
-	log.Printf("Starting to listen on %s", config.SocketPath)
-	internal.NewSocket(&config, db, apns)
+	apns := internal.NewApns(&cfg, db)
+	internal.NewHttpSocket(&cfg, db, apns)
 }
 
 // function to generate the password

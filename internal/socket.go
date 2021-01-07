@@ -1,138 +1,50 @@
 package internal
 
 import (
-	"bufio"
-	"errors"
+	"encoding/json"
 	"github.com/freswa/dovecot-xaps-daemon/internal/config"
 	"github.com/freswa/dovecot-xaps-daemon/internal/database"
+	"github.com/julienschmidt/httprouter"
 	log "github.com/sirupsen/logrus"
-	"net"
-	"os"
-	"strings"
+	"net/http"
 )
 
-type command struct {
-	name string
-	args map[string]interface{}
+type httpHandler struct {
+	db   *database.Database
+	apns *Apns
 }
 
-func NewSocket(config *config.Config, db *database.Database, apns *Apns) {
-	// Delete the socketpath if it already exists
-	if _, err := os.Stat(config.SocketPath); err == nil {
-		err := os.Remove(config.SocketPath)
-		if err != nil {
-			log.Fatalln("Could not delete existing socketpath: ", config.SocketPath, err)
-		}
-	}
-	log.Debugln("Listening on UNIX socketpath at", config.SocketPath)
+// REGISTER aps-account-id="AAA" aps-device-token="BBB"
+//    aps-subtopic="com.apple.mobilemail"
+//    dovecot-username="stefan"
+//    dovecot-mailboxes=("Inbox","Notes")
+type Register struct {
+	ApsAccountId   string
+	ApsDeviceToken string
+	ApsSubtopic    string
+	Username       string
+	Mailboxes      []string
+}
 
-	listener, err := net.Listen("unix", config.SocketPath)
+// NOTIFY dovecot-username="stefan" dovecot-mailbox="Inbox"
+type Notify struct {
+	Username string
+	Mailbox  string
+	Events   []string
+}
+
+func NewHttpSocket(config *config.Config, db *database.Database, apns *Apns) {
+	router := httprouter.New()
+	httpSocket := httpHandler{db, apns}
+	router.POST("/register", httpSocket.handleRegister)
+	router.POST("/notify", httpSocket.handleNotify)
+	err := http.ListenAndServe(":"+config.Port, router)
 	if err != nil {
-		log.Fatalln("Could not create socketpath: ", err)
+		log.Fatalf("Could not listen on Port %s: %s", config.Port, err)
 	}
-	defer os.Remove(config.SocketPath)
-
-	// TODO What is the proper way to limit Dovecot to this socketpath
-	err = os.Chmod(config.SocketPath, 0777)
-	if err != nil {
-		log.Fatalln("Could not chmod socketpath: ", err)
-	}
-
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Println("Failed to accept connection: ", err.Error())
-			os.Exit(1)
-		}
-
-		log.Debugln("Accepted a connection")
-		go handleRequest(conn, db, apns)
-	}
+	log.Infof("Listening on Port %s", config.Port)
 }
 
-func parseListValue(value string) ([]string, error) {
-	var list []string
-	values := strings.Split(value[1:len(value)-1], ",")
-	for _, value := range values {
-		stringValue, err := parseStringValue(value)
-		if err != nil {
-			return nil, err
-		}
-		list = append(list, stringValue)
-	}
-	return list, nil
-}
-
-func parseStringValue(value string) (string, error) {
-	return value[1 : len(value)-1], nil // TODO Escaping!
-}
-
-func parseCommand(line string) (command, error) {
-	cmd := command{args: make(map[string]interface{})}
-
-	parts := strings.SplitN(line, " ", 2)
-	if len(parts) != 2 {
-		return cmd, errors.New("Failed to parse: no name found")
-	}
-
-	cmd.name = parts[0]
-
-	for _, pair := range strings.Split(parts[1], "\t") {
-		nameAndValue := strings.SplitN(pair, "=", 2)
-		if len(nameAndValue) != 2 {
-			return cmd, errors.New("Failed to parse: no name/value pair found")
-		}
-
-		switch {
-		case strings.HasPrefix(nameAndValue[1], `"`) && strings.HasSuffix(nameAndValue[1], `"`):
-			value, err := parseStringValue(nameAndValue[1])
-			if err != nil {
-				return cmd, err
-			}
-			cmd.args[nameAndValue[0]] = value
-		case strings.HasPrefix(nameAndValue[1], "(") && strings.HasSuffix(nameAndValue[1], ")"):
-			value, err := parseListValue(nameAndValue[1])
-			if err != nil {
-				return cmd, err
-			}
-			cmd.args[nameAndValue[0]] = value
-		default:
-			return cmd, errors.New("Failed to parse: invalid value in key/value pair")
-		}
-	}
-
-	return cmd, nil
-}
-
-func handleRequest(conn net.Conn, db *database.Database, apns *Apns) {
-	defer conn.Close()
-
-	scanner := bufio.NewScanner(conn)
-	for scanner.Scan() {
-		log.Debugln("Received request:", scanner.Text())
-
-		command, err := parseCommand(scanner.Text())
-		if err != nil {
-			log.Fatalln("Error parsing socket data: ", err)
-		}
-
-		switch command.name {
-		case "REGISTER":
-			handleRegister(conn, command, db, apns)
-		case "NOTIFY":
-			handleNotify(conn, command, db, apns)
-		default:
-			writeError(conn, "Unknown command")
-		}
-	}
-
-	err := scanner.Err()
-	if err != nil {
-		log.Fatalln("Error while reading from socket: ", err)
-	}
-}
-
-//
 // Handle the REGISTER command. It looks as follows:
 //
 //  REGISTER aps-account-id="AAA" aps-device-token="BBB"
@@ -144,42 +56,41 @@ func handleRequest(conn net.Conn, db *database.Database, apns *Apns) {
 // the certificate issued by OS X Server for email push
 // notifications.
 //
-func handleRegister(conn net.Conn, cmd command, db *database.Database, apns *Apns) {
-	// Make sure the subtopic is ok
-	subtopic, ok := cmd.getStringArg("aps-subtopic")
-	if !ok {
-		writeError(conn, "Missing aps-subtopic argument")
-	}
-	if subtopic != "com.apple.mobilemail" {
-		writeError(conn, "Unknown aps-subtopic")
+func (httpHandler *httpHandler) handleRegister(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
+	defer request.Body.Close()
+
+	reg := Register{}
+	err := json.NewDecoder(request.Body).Decode(&reg)
+	if err != nil {
+		log.Errorf("Error while handling register call: %s", err)
+		writer.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	// Make sure we got the required parameters
-	accountId, ok := cmd.getStringArg("aps-account-id")
-	if !ok {
-		writeError(conn, "Missing aps-account-id argument")
+	if reg.checkParams() {
+		log.Errorf("Incomplete register payload: %v", reg)
+		writer.WriteHeader(http.StatusBadRequest)
+		return
 	}
-	deviceToken, ok := cmd.getStringArg("aps-device-token")
-	if !ok {
-		writeError(conn, "Missing aps-device-token argument")
+
+	// Make sure the subtopic is ok
+	if reg.ApsSubtopic != "com.apple.mobilemail" {
+		log.Errorf("Unknown aps-subtopic: %s", reg.ApsSubtopic)
+		writer.WriteHeader(http.StatusBadRequest)
+		return
 	}
-	username, ok := cmd.getStringArg("dovecot-username")
-	if !ok {
-		writeError(conn, "Missing dovecot-username argument")
-	}
-	mailboxes, ok := cmd.getListArg("dovecot-mailboxes")
-	if !ok {
-		writeError(conn, "Missing dovecot-mailboxes argument")
-	}
+
 	// Register this email/account-id/device-token combination
-	err := db.AddRegistration(username, accountId, deviceToken, mailboxes)
-	if !ok {
-		writeError(conn, "Failed to register client: "+err.Error())
+	err = httpHandler.db.AddRegistration(reg.Username, reg.ApsAccountId, reg.ApsDeviceToken, reg.Mailboxes)
+	if err != nil {
+		log.Errorf("Failed to register client:: %s", err)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
 	}
-	writeSuccess(conn, apns.Topic)
+
+	writer.WriteHeader(http.StatusOK)
 }
 
-//
 // Handle the NOTIFY command. It looks as follows:
 //
 //  NOTIFY dovecot-username="stefan" dovecot-mailbox="Inbox"
@@ -192,78 +103,100 @@ func handleRegister(conn net.Conn, cmd command, db *database.Database, apns *Apn
 //
 //  { "aps": { "account-id": aps-account-id } }
 //
-func handleNotify(conn net.Conn, cmd command, db *database.Database, apns *Apns) {
-	// Make sure we got the required arguments
-	username, ok := cmd.getStringArg("dovecot-username")
-	if !ok {
-		writeError(conn, "Missing dovecot-username argument")
+func (httpHandler *httpHandler) handleNotify(writer http.ResponseWriter, request *http.Request, _ httprouter.Params) {
+	defer request.Body.Close()
+
+	notify := Notify{}
+	err := json.NewDecoder(request.Body).Decode(&notify)
+	if err != nil {
+		log.Errorf("Error while handling notify call: %s", err)
+		writer.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
-	mailbox, ok := cmd.getStringArg("dovecot-mailbox")
-	if !ok {
-		writeError(conn, "Missing dovecot-mailbox argument")
+	if notify.checkParams() {
+		log.Errorf("Incomplete register payload: %v", notify)
+		writer.WriteHeader(http.StatusBadRequest)
+		return
 	}
 
 	isMessageNew := false
-	events, ok := cmd.getListArg("events")
-	if !ok {
-		log.Warnln("No events found in NOTIFY message, please update the xaps-dovecot-plugin!")
-		isMessageNew = true
-	}
-
 	// check if this is an event for a new message
 	// for all possible events have a look at dovecot-core:
 	// grep '#define EVENT_NAME' src/plugins/push-notification/push-notification-event*
-	for _, e := range events {
+	for _, e := range notify.Events {
 		if e == "MessageNew" {
 			isMessageNew = true
 		}
 	}
 
-	// we don't know how to handle other mboxes other than INBOX, so ignore them
-	if mailbox != "INBOX" {
-		log.Debugln("Ignoring non INBOX event for:", mailbox)
-		writeSuccess(conn, "")
+	// we don't know how to handle other mailboxes other than INBOX, so ignore them
+	if notify.Mailbox != "INBOX" {
+		log.Debugln("Ignoring non INBOX event for:", notify.Mailbox)
+		writer.WriteHeader(http.StatusOK)
 		return
 	}
 
 	// Find all the devices registered for this mailbox event
-	registrations, err := db.FindRegistrations(username, mailbox)
+	registrations, err := httpHandler.db.FindRegistrations(notify.Username, notify.Mailbox)
 	if err != nil {
-		writeError(conn, "Cannot lookup registrations: "+err.Error())
+		log.Errorf("Cannot lookup registrations: %s", err)
+		writer.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 
 	for _, r := range registrations {
-		log.Debugf("Found registration %s with token %s for username: %s", r.AccountId, r.DeviceToken, username)
+		log.Debugf("Found registration %s with token %s for username: %s", r.AccountId, r.DeviceToken, notify.Username)
 	}
 	if len(registrations) == 0 {
-		log.Debugf("No registration found for username: %s", username)
+		log.Errorf("No registration found for username: %s", notify.Username)
+		writer.WriteHeader(http.StatusNotFound)
+		return
 	}
 
 	// Send a notification to all registered devices. We ignore failures
 	// because there is not a lot we can do.
 	for _, registration := range registrations {
-		apns.SendNotification(registration, !isMessageNew)
+		httpHandler.apns.SendNotification(registration, !isMessageNew)
 	}
-	writeSuccess(conn, "")
+
+	writer.WriteHeader(http.StatusOK)
 }
 
-func (cmd *command) getStringArg(name string) (string, bool) {
-	arg, ok := cmd.args[name].(string)
-	return arg, ok
+func (reg *Register) checkParams() (isError bool) {
+	// Make sure we got the required parameters
+	if len(reg.ApsAccountId) == 0 {
+		log.Error("Missing aps-account-id in register request")
+		isError = true
+	}
+	if len(reg.ApsDeviceToken) == 0 {
+		log.Error("Missing aps-device-token in register request")
+		isError = true
+	}
+	if len(reg.Username) == 0 {
+		log.Error("Missing dovecot-username in register request")
+		isError = true
+	}
+	if len(reg.Mailboxes) == 0 {
+		log.Error("Missing dovecot-mailboxes in register request")
+		isError = true
+	}
+	return
 }
 
-func (cmd *command) getListArg(name string) ([]string, bool) {
-	arg, ok := cmd.args[name].([]string)
-	return arg, ok
-}
-
-func writeError(conn net.Conn, msg string) {
-	log.Debugln("Returning failure:", msg)
-	conn.Write([]byte("ERROR" + " " + msg + "\n"))
-}
-
-func writeSuccess(conn net.Conn, msg string) {
-	log.Debugln("Returning success:", msg)
-	conn.Write([]byte("OK" + " " + msg + "\n"))
+func (notify *Notify) checkParams() (isError bool) {
+	// Make sure we got the required parameters
+	if len(notify.Username) == 0 {
+		log.Error("Missing username in notify request")
+		isError = true
+	}
+	if len(notify.Mailbox) == 0 {
+		log.Error("Missing mailbox in notify request")
+		isError = true
+	}
+	if len(notify.Events) == 0 {
+		log.Error("Missing register in notify request")
+		isError = true
+	}
+	return
 }

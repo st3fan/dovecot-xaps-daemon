@@ -3,14 +3,27 @@ Description=Apple Push Notification Service
 After=network.target auditd.service
 
 [Service]
-User=root
+User=xapsd
+Group=nobody
 ExecStart=/usr/bin/xapsd
 Restart=on-failure
 
 # Hardening
-SystemCallArchitectures=native
 MemoryDenyWriteExecute=true
 NoNewPrivileges=true
+PrivateDevices=true
+PrivateTmp=true
+ProtectHome=true
+ProtectControlGroups=true
+ProtectKernelModules=true
+ProtectSystem=strict
+RestrictRealtime=true
+SystemCallArchitectures=native
+SystemCallFilter= @basic-io @network-io @timer
+RestrictNamespaces=yes
+LockPersonality=yes
+RestrictSUIDSGID=yes
+ReadWritePaths=/var/lib/xapsd
 
 [Install]
 WantedBy=multi-user.target
