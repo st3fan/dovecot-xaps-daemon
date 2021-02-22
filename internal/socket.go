@@ -88,7 +88,7 @@ func (httpHandler *httpHandler) handleRegister(writer http.ResponseWriter, reque
 		return
 	}
 
-	writer.WriteHeader(http.StatusOK)
+	writer.Write([]byte(httpHandler.apns.Topic))
 }
 
 // Handle the NOTIFY command. It looks as follows:
