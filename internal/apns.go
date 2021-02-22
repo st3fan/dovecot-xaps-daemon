@@ -127,7 +127,11 @@ func (apns *Apns) SendNotification(registration database.Registration, delayed b
 	notification.Expiration = time.Now().Add(24 * time.Hour)
 	// set the apns-priority
 	//notification.Priority = apns2.PriorityLow
-
+	
+	if log.IsLevelEnabled(log.DebugLevel) {
+		dbgstr, _ := notification.MarshalJSON()
+		log.Debugf("Sending: %s", dbgstr)
+	}
 	res, err := apns.client.Push(notification)
 
 	if err != nil {
