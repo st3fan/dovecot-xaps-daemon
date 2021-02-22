@@ -4,7 +4,7 @@ After=network.target auditd.service
 
 [Service]
 User=xapsd
-Group=nobody
+Group=xapsd
 ExecStart=/usr/bin/xapsd
 Restart=on-failure
 

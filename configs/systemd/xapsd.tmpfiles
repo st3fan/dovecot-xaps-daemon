@@ -1,1 +1,1 @@
-d /var/lib/xapsd 755 xapsd nobody
+d /var/lib/xapsd 755 xapsd xapsd
