@@ -263,6 +263,11 @@ func (db *Database) FindRegistrations(username, mailbox string) ([]Registration,
 	return registrations, nil
 }
 
+func (db *Database) UserExists(username string) bool {
+	_, ok := db.Users[username]
+	return ok
+}
+
 func (db *Database) cleanupRegistered() {
 	log.Debugln("Check Database for devices not calling IMAP hook for more than 30d")
 	for _, user := range db.Users {

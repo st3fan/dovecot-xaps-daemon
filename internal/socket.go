@@ -149,8 +149,14 @@ func (httpHandler *httpHandler) handleNotify(writer http.ResponseWriter, request
 		log.Debugf("Found registration %s with token %s for username: %s", r.AccountId, r.DeviceToken, notify.Username)
 	}
 	if len(registrations) == 0 {
-		log.Errorf("No registration found for username: %s", notify.Username)
-		writer.WriteHeader(http.StatusNotFound)
+		if httpHandler.db.UserExists(notify.Username) {
+			// This isn't an error as registrations are also empty if the mailbox doesn't match
+			log.Infof("No registered mailbox found for username: %s", notify.Username)
+			writer.WriteHeader(http.StatusNoContent)
+		} else {
+			log.Errorf("No registration found for username: %s", notify.Username)
+			writer.WriteHeader(http.StatusNotFound)
+		}
 		return
 	}
 
