@@ -154,7 +154,7 @@ func (httpHandler *httpHandler) handleNotify(writer http.ResponseWriter, request
 			log.Infof("No registered mailbox found for username: %s", notify.Username)
 			writer.WriteHeader(http.StatusNoContent)
 		} else {
-			log.Errorf("No registration found for username: %s", notify.Username)
+			log.Warnf("No registration found for username: %s", notify.Username)
 			writer.WriteHeader(http.StatusNotFound)
 		}
 		return
