@@ -26,19 +26,41 @@
 package database
 
 import (
+	"io"
 	"io/ioutil"
+	"log"
 	"os"
 	"testing"
 )
 
-func TestDatabase_NewDatabase(t *testing.T) {
-	db, err := NewDatabase("testdata/database.json")
+func DBCreateWorkingCopy() {
+	// Open original file
+	original, err := os.Open("testdata/database.json")
 	if err != nil {
-		t.Error("Cannot open database testdata/database.json", err)
+		log.Fatal(err)
+	}
+	defer original.Close()
+
+	// Create cpy file
+	cpy, err := os.Create("testdata/database_workingcpy.json")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cpy.Close()
+
+	//This will copy
+	io.Copy(cpy, original)
+}
+
+func TestDatabase_NewDatabase(t *testing.T) {
+	DBCreateWorkingCopy()
+	db, err := NewDatabase("testdata/database_workingcpy.json")
+	if err != nil {
+		t.Error("Cannot open database testdata/database_workingcpy.json", err)
 	}
 
-	if db.filename != "testdata/database.json" {
-		t.Error(`db.filename != "testdata/database.json"`)
+	if db.filename != "testdata/database_workingcpy.json" {
+		t.Error(`db.filename != "testdata/database_workingcpy.json"`)
 	}
 
 	if len(db.Users) != 2 {
@@ -93,9 +115,10 @@ func TestDatabase_AddRegistration(t *testing.T) {
 }
 
 func TestDatabase_FindRegistrations(t *testing.T) {
-	db, err := NewDatabase("testdata/database.json")
+	DBCreateWorkingCopy()
+	db, err := NewDatabase("testdata/database_workingcpy.json")
 	if err != nil {
-		t.Error("Cannot open database testdata/database.json", err)
+		t.Error("Cannot open database testdata/database_workingcpy.json", err)
 	}
 
 	registrations, err := db.FindRegistrations("stefan", "Inbox")
@@ -143,9 +166,10 @@ func TestDatabase_AccountContainsMailbox(t *testing.T) {
 }
 
 func TestDatabase_DeleteIfExistRegistration(t *testing.T) {
-	db, err := NewDatabase("testdata/database.json")
+	DBCreateWorkingCopy()
+	db, err := NewDatabase("testdata/database_workingcpy.json")
 	if err != nil {
-		t.Error("Cannot open database testdata/database.json", err)
+		t.Error("Cannot open database testdata/database_workingcpy.json", err)
 	}
 
 	success := db.DeleteIfExistRegistration("alicedevicetoken1")
@@ -156,5 +180,25 @@ func TestDatabase_DeleteIfExistRegistration(t *testing.T) {
 	success = db.DeleteIfExistRegistration("alicedevicetoken1")
 	if success {
 		t.Error("Not existend device token has been *successfully* deleted???", err)
+	}
+}
+
+func TestDatabase_CleanupRegistration(t *testing.T) {
+	DBCreateWorkingCopy()
+	db, err := NewDatabase("testdata/database_workingcpy.json")
+	if err != nil {
+		t.Error("Cannot open database testdata/database_workingcpy.json", err)
+	}
+
+	arr, _ := db.FindRegistrations("alice", "Inbox")
+	if len(arr) < 1 {
+		t.Error("Registration to cleanup not found!")
+	}
+
+	db.cleanupRegistered()
+
+	arr, _ = db.FindRegistrations("alice", "Inbox")
+	if len(arr) > 0 {
+		t.Error("Registration not cleaned up!")
 	}
 }

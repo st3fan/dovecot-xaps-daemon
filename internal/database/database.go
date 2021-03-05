@@ -270,11 +270,16 @@ func (db *Database) UserExists(username string) bool {
 
 func (db *Database) cleanupRegistered() {
 	log.Debugln("Check Database for devices not calling IMAP hook for more than 30d")
+	toDelete := make([]string, 0)
+
 	for _, user := range db.Users {
 		for _, account := range user.Accounts {
 			if !account.RegistrationTime.IsZero() && account.RegistrationTime.Before(time.Now().Add(-time.Hour*24*30)) {
-				db.DeleteIfExistRegistration(account.DeviceToken)
+				toDelete = append(toDelete, account.DeviceToken)
 			}
 		}
+	}
+	for _, token := range toDelete {
+		db.DeleteIfExistRegistration(token)
 	}
 }
