@@ -9,7 +9,7 @@ ExecStart=/usr/bin/xapsd
 Restart=on-failure
 
 # Each IMAP process creates a persistent HTTP connection
-LimitNOFILE=65536
+LimitNOFILE=1024000
 
 # Hardening
 MemoryDenyWriteExecute=true
