@@ -17,6 +17,9 @@ type (
 		Delay                 uint
 		AppleId               string
 		AppleIdHashedPassword string
+		TlsCertfile           string
+		TlsKeyfile            string
+		TlsPort               string
 	}
 )
 

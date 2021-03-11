@@ -42,6 +42,12 @@ func NewHttpSocket(config *config.Config, db *database.Database, apns *Apns) {
 	if err != nil {
 		log.Fatalf("Could not listen on Port %s: %s", config.Port, err)
 	}
+	if len(config.TlsCertfile) > 0 || len(config.TlsKeyfile) > 0 {
+		err = http.ListenAndServeTLS(":"+config.TlsPort, config.TlsCertfile, config.TlsKeyfile, router)
+		if err != nil {
+			log.Fatalf("Could not listen on Port %s: %s", config.TlsPort, err)
+		}
+	}
 	log.Infof("Listening on Port %s", config.Port)
 }
 
