@@ -115,7 +115,8 @@ func (db *Database) write() error {
 		return err
 	}
 
-	return ioutil.WriteFile(db.filename, data, 0644)
+	err = ioutil.WriteFile(db.filename + ".new", data, 0644)
+	return os.Rename(db.filename + ".new", db.filename)
 }
 
 func (db *Database) GetCerts() (certs *apple_xserver_certs.Certificates, success bool) {
