@@ -38,18 +38,18 @@ func NewHttpSocket(config *config.Config, db *database.Database, apns *Apns) {
 	httpSocket := httpHandler{db, apns}
 	router.POST("/register", httpSocket.handleRegister)
 	router.POST("/notify", httpSocket.handleNotify)
+	if len(config.TlsCertfile) > 0 || len(config.TlsKeyfile) > 0 {
+		go func() {
+			err := http.ListenAndServeTLS(":"+config.TlsPort, config.TlsCertfile, config.TlsKeyfile, router)
+			if err != nil {
+				log.Fatalf("Could not listen on Port %s: %s", config.TlsPort, err)
+			}
+		}()
+	}
 	err := http.ListenAndServe(":"+config.Port, router)
 	if err != nil {
 		log.Fatalf("Could not listen on Port %s: %s", config.Port, err)
 	}
-	if len(config.TlsCertfile) > 0 || len(config.TlsKeyfile) > 0 {
-		err = http.ListenAndServeTLS(":"+config.TlsPort, config.TlsCertfile, config.TlsKeyfile, router)
-		if err != nil {
-			log.Fatalf("Could not listen on Port %s: %s", config.TlsPort, err)
-		}
-		log.Infof("Listening for TLS connection on Port %s", config.TlsPort)
-	}
-	log.Infof("Listening on Port %s", config.Port)
 }
 
 // Handle the REGISTER command. It looks as follows:
