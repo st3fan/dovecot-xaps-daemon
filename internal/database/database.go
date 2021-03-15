@@ -68,6 +68,7 @@ type Database struct {
 	filename   string
 	Users      map[string]User
 	AppleCerts DbCerts
+	lastWrite time.Time
 }
 
 type DbCerts struct {
@@ -206,7 +207,7 @@ func (db *Database) PutCerts(certs *apple_xserver_certs.Certificates) {
 	return
 }
 
-func (db *Database) AddRegistration(username, accountId, deviceToken string, mailboxes []string) error {
+func (db *Database) AddRegistration(username, accountId, deviceToken string, mailboxes []string) (err error) {
 	//  mutual write access to database issue #16 xaps-plugin
 	dbMutex.Lock()
 
@@ -228,11 +229,13 @@ func (db *Database) AddRegistration(username, accountId, deviceToken string, mai
 			RegistrationTime: time.Now(),
 		}
 
-	err := db.write()
+	if db.lastWrite.Before(time.Now().Add(-time.Minute*15)) {
+		err = db.write()
+	}
 
 	// release mutex
 	dbMutex.Unlock()
-	return err
+	return
 }
 
 func (db *Database) DeleteIfExistRegistration(deviceToken string) bool {
