@@ -99,6 +99,7 @@ func TestDatabase_AddRegistration(t *testing.T) {
 	if err := db.AddRegistration("alice@example.com", "aliceaccountid", "alicetoken", []string{"Inbox", "Important"}); err != nil {
 		t.Error("Cannot addRegistration:", err)
 	}
+	db.write()
 
 	db, err = NewDatabase(f.Name())
 	if err != nil {
