@@ -231,6 +231,7 @@ func (db *Database) AddRegistration(username, accountId, deviceToken string, mai
 
 	if db.lastWrite.Before(time.Now().Add(-time.Minute*15)) {
 		err = db.write()
+		db.lastWrite = time.Now()
 	}
 
 	// release mutex
