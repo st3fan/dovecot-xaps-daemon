@@ -240,12 +240,16 @@ func (db *Database) AddRegistration(username, accountId, deviceToken string, mai
 }
 
 func (db *Database) DeleteIfExistRegistration(reg Registration) bool {
-	for _, user := range db.Users {
+	for username, user := range db.Users {
 		for accountId, account := range user.Accounts {
 			if accountId == reg.AccountId {
 				dbMutex.Lock()
 				log.Infoln("Deleting " + account.DeviceToken)
 				delete(user.Accounts, accountId)
+				// clean up empty users
+				if len(user.Accounts) == 0 {
+					delete(db.Users, username)
+				}
 				db.write()
 				dbMutex.Unlock()
 				return true
