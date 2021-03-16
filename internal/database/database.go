@@ -239,10 +239,10 @@ func (db *Database) AddRegistration(username, accountId, deviceToken string, mai
 	return
 }
 
-func (db *Database) DeleteIfExistRegistration(deviceToken string) bool {
+func (db *Database) DeleteIfExistRegistration(reg Registration) bool {
 	for _, user := range db.Users {
 		for accountId, account := range user.Accounts {
-			if account.DeviceToken == deviceToken {
+			if accountId == reg.AccountId {
 				dbMutex.Lock()
 				log.Infoln("Deleting " + account.DeviceToken)
 				delete(user.Accounts, accountId)
@@ -275,17 +275,17 @@ func (db *Database) UserExists(username string) bool {
 
 func (db *Database) cleanupRegistered() {
 	log.Debugln("Check Database for devices not calling IMAP hook for more than 30d")
-	toDelete := make([]string, 0)
+	toDelete := make([]Registration, 0)
 	dbMutex.Lock()
 	for _, user := range db.Users {
-		for _, account := range user.Accounts {
+		for accountId, account := range user.Accounts {
 			if !account.RegistrationTime.IsZero() && account.RegistrationTime.Before(time.Now().Add(-time.Hour*24*30)) {
-				toDelete = append(toDelete, account.DeviceToken)
+				toDelete = append(toDelete, Registration{account.DeviceToken, accountId})
 			}
 		}
 	}
 	dbMutex.Unlock()
-	for _, token := range toDelete {
-		db.DeleteIfExistRegistration(token)
+	for _, reg := range toDelete {
+		db.DeleteIfExistRegistration(reg)
 	}
 }

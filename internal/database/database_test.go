@@ -173,12 +173,18 @@ func TestDatabase_DeleteIfExistRegistration(t *testing.T) {
 		t.Error("Cannot open database testdata/database_workingcpy.json", err)
 	}
 
-	success := db.DeleteIfExistRegistration("alicedevicetoken1")
+	success := db.DeleteIfExistRegistration(Registration{
+		DeviceToken: "alicedevicetoken1",
+		AccountId:   "aliceaccountid1",
+	})
 	if !success {
 		t.Error("Device token could not be removed", err)
 	}
 
-	success = db.DeleteIfExistRegistration("alicedevicetoken1")
+	success = db.DeleteIfExistRegistration(Registration{
+		DeviceToken: "alicedevicetoken1",
+		AccountId:   "aliceaccountid1",
+	})
 	if success {
 		t.Error("Not existend device token has been *successfully* deleted???", err)
 	}

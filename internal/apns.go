@@ -144,7 +144,7 @@ func (apns *Apns) SendNotification(registration database.Registration, delayed b
 	case 410:
 		// The device token is inactive for the specified topic.
 		log.Infoln("Apple returned 410 for notification to", registration.AccountId, "/", registration.DeviceToken)
-		apns.db.DeleteIfExistRegistration(registration.DeviceToken)
+		apns.db.DeleteIfExistRegistration(registration)
 	default:
 		log.Errorf("Apple returned a non-200 HTTP status: %v %v %v\n", res.StatusCode, res.ApnsID, res.Reason)
 	}
