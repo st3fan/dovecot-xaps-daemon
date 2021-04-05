@@ -15,6 +15,11 @@ import (
 	"time"
 )
 
+const (
+	// renew certs this duration before the certs become invalid
+	renewTimeBuffer = time.Hour * 24 * 30
+)
+
 var (
 	oidUid        = []int{0, 9, 2342, 19200300, 100, 1, 1}
 	productionOID = []int{1, 2, 840, 113635, 100, 6, 3, 2}
@@ -29,12 +34,13 @@ type Apns struct {
 	db                   *database.Database
 	mapMutex             sync.Mutex
 	delayedApns          map[database.Registration]time.Time
+	RenewTimer           *time.Timer
 }
 
-func NewApns(config *config.Config, db *database.Database) (apns *Apns) {
+func NewApns(cfg *config.Config, db *database.Database) (apns *Apns) {
 	apns = &Apns{
-		DelayTime:            config.Delay,
-		CheckDelayedInterval: config.CheckInterval,
+		DelayTime:            cfg.Delay,
+		CheckDelayedInterval: cfg.CheckInterval,
 		db:                   db,
 		mapMutex:             sync.Mutex{},
 		delayedApns:          make(map[database.Registration]time.Time),
@@ -43,15 +49,19 @@ func NewApns(config *config.Config, db *database.Database) (apns *Apns) {
 	log.Debugln("Trying to get existing certs from the DB")
 	// try to retrieve certs from the db
 	certs, successful := apns.db.GetCerts()
-	// if we got some certs but they are no longer than 30 days valid
-	if successful && invalidAfterFromCertificate(certs.Mail) < time.Hour*24*30 {
-		certs = apple_xserver_certs.RenewCerts(certs, config.AppleId, config.AppleIdHashedPassword)
+	// if we got some certs but they are no longer valid than 30 days
+	if successful && certificateNotValidAfter(certs.Mail).Sub(time.Now()) < renewTimeBuffer {
+		certs = apple_xserver_certs.RenewCerts(certs, cfg.AppleId, cfg.AppleIdHashedPassword)
 		apns.db.PutCerts(certs)
 	}
 	if !successful {
-		certs = apple_xserver_certs.NewCerts(config.AppleId, config.AppleIdHashedPassword)
+		certs = apple_xserver_certs.NewCerts(cfg.AppleId, cfg.AppleIdHashedPassword)
 		apns.db.PutCerts(certs)
 	}
+	// renew certs 30 days before they expire
+	renewIn := certificateNotValidAfter(certs.Mail).Sub(time.Now().Add(-renewTimeBuffer))
+	apns.RenewTimer = time.AfterFunc(renewIn, func() { apns.renewCert(cfg) })
+
 	// extract the mail cert and retrieve its topic
 	mailCert := certs.Mail
 	topic, err := topicFromCertificate(*mailCert)
@@ -77,6 +87,22 @@ func NewApns(config *config.Config, db *database.Database) (apns *Apns) {
 
 	apns.createDelayedNotificationThread()
 	return apns
+}
+
+func (apns *Apns) renewCert(cfg *config.Config) {
+	certs, successful := apns.db.GetCerts()
+	if !successful {
+		log.Fatal("Failed to get certs from DB while trying to renew them")
+	}
+
+	certs = apple_xserver_certs.RenewCerts(certs, cfg.AppleId, cfg.AppleIdHashedPassword)
+	apns.db.PutCerts(certs)
+	mailCert := certs.Mail
+	apns.client = apns2.NewClient(*mailCert).Production()
+
+	// renew certs 30 days before they expire
+	renewIn := certificateNotValidAfter(certs.Mail).Sub(time.Now().Add(-renewTimeBuffer))
+	apns.RenewTimer = time.AfterFunc(renewIn, func() { apns.renewCert(cfg) })
 }
 
 func (apns *Apns) createDelayedNotificationThread() {
@@ -177,10 +203,10 @@ func topicFromCertificate(tlsCert tls.Certificate) (string, error) {
 }
 
 // returns the duration until the certificate is invalid
-func invalidAfterFromCertificate(certificate *tls.Certificate) time.Duration {
+func certificateNotValidAfter(certificate *tls.Certificate) time.Time {
 	cert, err := x509.ParseCertificate(certificate.Certificate[0])
 	if err != nil {
 		log.Fatalln("Could not parse certificate: ", err)
 	}
-	return cert.NotAfter.Sub(time.Now())
+	return cert.NotAfter
 }

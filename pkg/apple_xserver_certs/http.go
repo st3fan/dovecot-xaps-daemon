@@ -11,16 +11,18 @@ import (
 func NewCerts(username string, passwordhash string) *Certificates {
 	certs := &Certificates{}
 	generatePrivateKeys(certs)
-	return requestCerts(certs, username, passwordhash)
+	body := createCertRequestBody(certs, username, passwordhash)
+	response := sendRequest(body, true)
+	return handleResponse(certs, response)
 }
 
 func RenewCerts(certs *Certificates, username string, passwordhash string) *Certificates {
-	return requestCerts(certs, username, passwordhash)
+	body := createCertRequestBody(certs, username, passwordhash)
+	response := sendRequest(body, false)
+	return handleResponse(certs, response)
 }
 
-func requestCerts(certs *Certificates, username string, passwordhash string) *Certificates {
-	body := createCertRequestBody(certs, username, passwordhash)
-	response := sendRequest(body)
+func handleResponse(certs *Certificates, response []byte) *Certificates {
 	responseBody, err := parseResponse(response)
 	if err != nil {
 		log.Fatal(err)
@@ -47,11 +49,15 @@ func requestCerts(certs *Certificates, username string, passwordhash string) *Ce
 	return certs
 }
 
-func sendRequest(reqBody []byte) (respBody []byte) {
+func sendRequest(reqBody []byte, newCerts bool) (respBody []byte) {
 	client := &http.Client{}
 	r := bytes.NewReader(reqBody)
+	url := "https://identity.apple.com/pushcert/caservice/renew"
+	if newCerts {
+		url = "https://identity.apple.com/pushcert/caservice/new"
+	}
 
-	req, err := http.NewRequest("POST", "https://identity.apple.com/pushcert/caservice/new", r)
+	req, err := http.NewRequest("POST", url, r)
 	if err != nil {
 		log.Fatalln(err)
 	}
