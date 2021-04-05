@@ -68,7 +68,7 @@ type Database struct {
 	filename   string
 	Users      map[string]User
 	AppleCerts DbCerts
-	lastWrite time.Time
+	lastWrite  time.Time
 }
 
 type DbCerts struct {
@@ -116,8 +116,8 @@ func (db *Database) write() error {
 		return err
 	}
 
-	err = ioutil.WriteFile(db.filename + ".new", data, 0644)
-	return os.Rename(db.filename + ".new", db.filename)
+	err = ioutil.WriteFile(db.filename+".new", data, 0644)
+	return os.Rename(db.filename+".new", db.filename)
 }
 
 func (db *Database) GetCerts() (certs *apple_xserver_certs.Certificates, success bool) {
@@ -229,7 +229,7 @@ func (db *Database) AddRegistration(username, accountId, deviceToken string, mai
 			RegistrationTime: time.Now(),
 		}
 
-	if db.lastWrite.Before(time.Now().Add(-time.Minute*15)) {
+	if db.lastWrite.Before(time.Now().Add(-time.Minute * 15)) {
 		err = db.write()
 		db.lastWrite = time.Now()
 	}
@@ -250,7 +250,10 @@ func (db *Database) DeleteIfExistRegistration(reg Registration) bool {
 				if len(user.Accounts) == 0 {
 					delete(db.Users, username)
 				}
-				db.write()
+				err := db.write()
+				if err != nil {
+					log.Error(err)
+				}
 				dbMutex.Unlock()
 				return true
 			}
