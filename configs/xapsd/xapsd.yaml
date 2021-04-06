@@ -1,7 +1,7 @@
 # set the loglevel to either
 # trace, debug, error, fatal, info, panic or warn
-# Default: warn
-loglevel: warn
+# Default: info
+loglevel: info
 
 # xapsd creates a json file to store the registration persistent on disk.
 # This sets the location of the file.
