@@ -48,7 +48,7 @@ Prerequisites
 
 You are going to need the following things to get this going:
 
-* Some patience and willingness to experiment - Although I run this project in production, it is still a very early version and it may contain bugs.
+* Some patience and willingness to experiment - Although I run this project in production, it may contain bugs.
 * Apple ID you've purchased macOS Server with
 * Dovecot > 2.2.19 (which introduced the push-notification plugin) 
 
@@ -74,6 +74,8 @@ Especially fill in the details of the Apple ID.
 The parameter `appleId` must be set to the login email address of the account.
 Please do _NOT_ fill in your password into `appleIdHashedPassword`, but instead run
 `xapsd -pass`. Then copy the printed hash to the config file.
+
+You don't have to care about certificate generation and renewal, as this is handled by the daemon. 
 
 
 Setting up Devices
