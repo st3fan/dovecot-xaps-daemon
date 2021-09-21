@@ -80,7 +80,7 @@ type (
 	aplCSR struct {
 		CSR                     string
 		CertRequestNo           int
-		CertificateSerialNumber string `plist:"-,omitempty"`
+		CertificateSerialNumber string `plist:"CertificateSerialNumber,omitempty"`
 		Description             string
 		ServiceType             string
 	}
